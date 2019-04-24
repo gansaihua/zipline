@@ -257,7 +257,7 @@ def ensure_treasury_data(symbol, first_date, last_date, now, environ=None):
     path.
     """
     loader_module, filename, source = INDEX_MAPPING.get(
-        symbol, INDEX_MAPPING['SPY'],
+        symbol, INDEX_MAPPING['000300.SH'],
     )
     first_date = max(first_date, loader_module.earliest_possible_date())
 

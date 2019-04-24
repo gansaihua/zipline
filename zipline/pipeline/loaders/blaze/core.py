@@ -973,9 +973,9 @@ class BlazeLoader(object):
             This can return more data than needed. The in memory reindex will
             handle this.
             """
-            predicate = e[TS_FIELD_NAME] < upper_dt
+            predicate = e[TS_FIELD_NAME] < upper_dt.tz_localize(None)
             if lower is not None:
-                predicate &= e[TS_FIELD_NAME] >= lower
+                predicate &= e[TS_FIELD_NAME] >= lower.tz_localize(None)
 
             return odo(e[predicate][colnames], pd.DataFrame, **odo_kwargs)
 
@@ -1083,7 +1083,7 @@ def get_materialized_checkpoints(checkpoints, colnames, lower_dt, odo_kwargs):
     if checkpoints is not None:
         ts = checkpoints[TS_FIELD_NAME]
         checkpoints_ts = odo(
-            ts[ts < lower_dt].max(),
+            ts[ts < lower_dt.tz_localize(None)].max(),
             pd.Timestamp,
             **odo_kwargs
         )
