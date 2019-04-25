@@ -1,16 +1,15 @@
 from .core import (
-    symbols, 
-    get_pricing, 
+    symbols,
     prices, 
     returns,
     benchmark_returns,
 )
 from .utils import (
-    select_output_by,
     get_backtest,
+    select_output_by,
     create_full_tear_sheet,
 )
-#from .talib import indicators
+from .talib import indicators
 from .pipebench import run_pipeline
 
 
@@ -21,8 +20,7 @@ __all__ = [
     'prices',
     'returns',
     'benchmark_returns',
-    'get_pricing',
     'get_backtest',
     'create_full_tear_sheet',
-    #'indicators',
+    'indicators',
 ]

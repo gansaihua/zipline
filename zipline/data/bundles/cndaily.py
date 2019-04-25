@@ -25,8 +25,13 @@ def cndaily_bundle(environ,
     log.info('Stock numbers: {}'.format(len(metadata)))
 
     splits = []
-    asset_db_writer.write(metadata)
     daily_bar_writer.write(_pricing_iter(metadata['sid'], splits))
+
+    asset_db_writer.write(
+        equities=metadata,
+        exchanges=gen_exchange_info()
+    )
+
     adjustment_writer.write(
         splits=pd.concat(splits, ignore_index=True)
         if len(splits) > 0 else None,
@@ -48,6 +53,12 @@ def gen_asset_metadata(sids=None):
     return data
 
 
+def gen_exchange_info():
+    exchange_records = [('XSHG', 'CN')]
+    column_names = ['exchange', 'country_code']
+    return pd.DataFrame(exchange_records, columns=column_names)
+
+
 def _pricing_iter(sids, splits):
     for sid in sids:
         data = get_stock_pricing(sid, post_func=sanitize_ohlcv, zfill=True)
@@ -64,7 +75,9 @@ def parse_splits(data, out):
     df = data[['sid', 'adjfactor']].reset_index()
     df.columns = ['effective_date', 'sid', 'ratio']
 
-    df['ratio'] /= df['ratio'].shift(-1)
+    df['ratio'] = df['ratio'].shift(1) / df['ratio']
     df = df[df['ratio']!=1].dropna()
+
+    df['sid'] = df['sid'].astype('int64')
 
     out.append(df)

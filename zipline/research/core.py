@@ -1,18 +1,22 @@
+from zipline.assets import Asset
 from zipline.data.benchmarks_cn import get_benchmark_returns
-from zipline.assets import Asset, Equity
-from .factory import (
-    _data_portal,
-    _asset_finder,
-    _trading_calendar,
+from zipline.research.constant import (
+    DEFAULT_COUNTRY,
+    DEFAULT_CALENDAR,
+    DEFAULT_DATA_PORTAL,
+    DEFAULT_ASSET_FINDER,
 )
 
-from secdb.utils.input_utils import ensure_list
-from secdb.reader import get_pricing as _get_pricing
+from secdata.utils import ensure_list
+from secdata.reader import get_stock_pricing
 
 import pandas as pd
 
 
-def symbols(symbols_, symbol_reference_date=None, country=None, handle_missing='log'):
+def symbols(symbols_,
+            symbol_reference_date=None,
+            country=None,
+            handle_missing='log'):
     """
     Convert a or a list of str and int into a list of Asset objects.
     
@@ -32,17 +36,19 @@ def symbols(symbols_, symbol_reference_date=None, country=None, handle_missing='
     """
     if isinstance(symbols_, Asset):
         return [symbols_]
+
+    if country is None:
+        country = DEFAULT_COUNTRY
     
     symbols_ = ensure_list(symbols_)
-    
-    finder = _asset_finder()
 
     if symbol_reference_date is not None:
         asof_date = pd.Timestamp(symbol_reference_date, tz='UTC')
     else:
         asof_date = pd.Timestamp('today', tz='UTC')
-        
+
     ret = []
+    finder = DEFAULT_ASSET_FINDER
     for symbol in symbols_:
         if isinstance(symbol, str):
             res = finder.lookup_symbol(
@@ -54,6 +60,7 @@ def symbols(symbols_, symbol_reference_date=None, country=None, handle_missing='
             ret.append(res)
         elif isinstance(symbol, Asset):
             ret.append(symbol)
+
     return ret
 
     
@@ -84,21 +91,20 @@ def prices(assets,
             Number of periods before start to fetch. Default is 0. 
             This is most often useful for calculating returns. 
     """
-    msg = "Only support frequency == 'daily'"
-    assert frequency == 'daily', msg
+    assert frequency == 'daily', "Only support frequency == 'daily'"
     
     valid_fields = ('open', 'high', 'low', 'close', 'price', 'volume')
-    msg = '只接受单一字段，有效字段为{}'.format(valid_fields)
-    assert isinstance(price_field, str), msg    
+    assert isinstance(price_field, str), '只接受单一字段，有效字段为{}'.format(valid_fields)
 
-    data_portal, calendar = _data_portal()
-    
+    data_portal = DEFAULT_DATA_PORTAL
+    calendar = DEFAULT_CALENDAR
+
     start = pd.Timestamp(start, tz='utc')
     if not calendar.is_session(start):
         # this is not a trading session, advance to the next session
         start = calendar.minute_to_session_label(
             start,
-            direction='next',
+            direction='previous',
         )
 
     end = pd.Timestamp(end, tz='utc')
@@ -112,10 +118,8 @@ def prices(assets,
     if start_offset:
         start -= start_offset * calendar.day
 
-    dates = calendar.all_sessions 
-    start_loc = dates.get_loc(start)
-    end_loc = dates.get_loc(end)
-    bar_count = end_loc - start_loc + 1
+    dates = calendar.all_sessions
+    bar_count = dates.get_loc(end) - dates.get_loc(start) + 1
 
     assets = symbols(assets, symbol_reference_date=symbol_reference_date)
     
@@ -140,21 +144,21 @@ def returns(assets,
                 symbol_reference_date, 
                 periods)
     
-    return df.pct_change(periods).iloc[1:]
+    return df.pct_change(periods).iloc[periods:]
 
 
 def benchmark_returns(symbol, start, end):
-    calendar = _trading_calendar()
-    
-    start = pd.Timestamp(start, tz='utc')
+    calendar = DEFAULT_CALENDAR
+
+    start_date = pd.Timestamp(start_date, tz='utc')
     if not calendar.is_session(start):
         # this is not a trading session, advance to the next session
         start = calendar.minute_to_session_label(
             start,
-            direction='next',
+            direction='previous',
         )
 
-    end = pd.Timestamp(end, tz='utc')
+    end_date = pd.Timestamp(end_date, tz='utc')
     if not calendar.is_session(end):
         # this is not a trading session, advance to the previous session
         end = calendar.minute_to_session_label(
@@ -165,55 +169,3 @@ def benchmark_returns(symbol, start, end):
     start -= calendar.day
 
     return get_benchmark_returns(symbol, start, end)
-
-
-def get_pricing(assets, 
-                start_date, 
-                end_date, 
-                fields='close', 
-                symbol_reference_date=None, 
-                handle_missing='raise', 
-                start_offset=0):
-    
-    calendar = _trading_calendar()
-    
-    start = pd.Timestamp(start_date, tz='utc')
-    if not calendar.is_session(start):
-        # this is not a trading session, advance to the next session
-        start = calendar.minute_to_session_label(
-            start,
-            direction='next',
-        )
-
-    end = pd.Timestamp(end_date, tz='utc')
-    if not calendar.is_session(end):
-        # this is not a trading session, advance to the previous session
-        end = calendar.minute_to_session_label(
-            end,
-            direction='previous',
-        )
-    
-    start -= start_offset * calendar.day
-    
-    assets = symbols(assets, symbol_reference_date)
-    sids = [
-        asset.sid
-        for asset in assets
-    ]
-    ret = _get_pricing(
-        sids, start, end, fields
-    )
-    
-    reduce_condition1 = len(sids) == 1
-    reduce_condition2 = len(fields) == 1
-    
-    if reduce_condition1 & (not reduce_condition2):
-        ret.columns = fields
-    elif (not reduce_condition1) & reduce_condition2:
-        ret.columns = assets
-    elif not (reduce_condition1 | reduce_condition2):
-        for k, v in ret.items():
-            v.columns = assets
-    
-    return ret
-        

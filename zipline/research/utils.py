@@ -109,4 +109,4 @@ def create_full_tear_sheet(df, benchmark_symbol='000300.SH'):
         benchmark_rets=benchmark_rets,
         positions=positions,
         transactions=transactions,
-        round_trips=True)    
+        round_trips=True)
