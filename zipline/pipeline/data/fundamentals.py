@@ -12,13 +12,15 @@ from zipline.pipeline.loaders.blaze.core import datashape_type_to_numpy
 
 from secdata.utils import bcolz_path
 
+import bcolz
 import blaze
 import pandas as pd
 
 
 INDICATORS = [
-    'total_assets',
+    'tot_assets',
     'shares_outstanding',
+    'float_a_shares',
 ]
 
 
@@ -64,8 +66,8 @@ class Fundamentals(object):
     def factory(name):
         ''' Bcolz data entry point
         '''
-        pth = bcolz_path(name)
-        expr = blaze.data(pth)
+        tbl = bcolz.open(bcolz_path(name), mode='r')
+        expr = blaze.data(tbl.todataframe())
         return from_blaze(
             expr, 
             domain=CN_EQUITIES,
