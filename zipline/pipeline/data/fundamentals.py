@@ -19,8 +19,10 @@ import pandas as pd
 
 INDICATORS = [
     'tot_assets',
-    'shares_outstanding',
+    'total_shares',
     'float_a_shares',
+    'mkt_cap_ashare',
+    'mkt_cap_ard',
 ]
 
 
@@ -63,17 +65,32 @@ class Fundamentals(object):
     
     @staticmethod
     @remember_last
-    def factory(name):
-        ''' Bcolz data entry point
-        '''
-        tbl = bcolz.open(bcolz_path(name), mode='r')
-        expr = blaze.data(tbl.todataframe())
+    def factory(name, use_checkpoints=False):
+        ''' Bcolz data entry point'''
+        expr = blaze.data(bcolz_path(name), name=name)
+
+        if use_checkpoints:
+            # 日度数据需要checkpoints加速ffill
+            # 此处采用为月度频率，ffill=None
+            checkpoints_dt = pd.date_range('2000-1-1', pd.Timestamp('today'), freq='M')
+            data = {k: 0 for k in expr.fields}
+            data.update({'asof_date': checkpoints_dt})
+            data.update({'timestamp': checkpoints_dt})
+            checkpoints = blaze.data(
+                pd.DataFrame(data),
+                dshape=expr.dshape,
+                name='checkpoints',
+            )
+        else:
+            checkpoints = None
+
         return from_blaze(
-            expr, 
+            expr,
             domain=CN_EQUITIES,
+            checkpoints=checkpoints,
             no_deltas_rule='ignore',
-            no_checkpoints_rule='ignore',            
-            missing_values=fillvalue_for_expr(expr)
+            no_checkpoints_rule='ignore',
+            missing_values=fillvalue_for_expr(expr),
         )
 
 

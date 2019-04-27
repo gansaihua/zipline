@@ -21,11 +21,12 @@ def cndaily_bundle(environ,
                    show_progress,
                    output_dir):
 
-    metadata = gen_asset_metadata([1, 2, 3])
+    metadata = gen_asset_metadata()
     log.info('Stock numbers: {}'.format(len(metadata)))
 
     splits = []
-    daily_bar_writer.write(_pricing_iter(metadata['sid'], splits))
+    daily_bar_writer.write(_pricing_iter(metadata['sid'], splits),
+                           show_progress=show_progress)
 
     asset_db_writer.write(
         equities=metadata,
