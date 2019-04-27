@@ -14,7 +14,7 @@ INDICATORS = [
 ]
         
     
-class Macro(object):
+class MacroEconomic(object):
     def __getattr__(self, name):
         if name in self.colnames:
             if name.endswith('_asof'):
@@ -57,14 +57,14 @@ class Macro(object):
 #For help hints (.), easy to use
 for k in INDICATORS:
     setattr(
-        Macro,
+        MacroEconomic,
         k, 
         AttributeError,
     )
     setattr(
-        Macro,
+        MacroEconomic,
         k + '_asof',
         AttributeError,
     )
 
-Macro = Macro()
+MacroEconomic = MacroEconomic()

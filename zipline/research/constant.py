@@ -32,7 +32,7 @@ DEFAULT_PIPELINE_LOADER = EquityPricingLoader(
 
 def choose_loader(column):
     if column.unspecialize() in EquityPricing.columns:
-        return pipeline_loader
+        return DEFAULT_PIPELINE_LOADER
     elif column in global_loader:
         return global_loader
     raise ValueError("%s is NOT registered in `PipelineLoader`." % column)

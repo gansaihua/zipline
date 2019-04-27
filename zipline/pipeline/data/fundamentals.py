@@ -12,12 +12,14 @@ INDICATORS = [
     'tot_assets',
     'total_shares',
     'float_a_shares',
-    'mkt_cap_ashare',
     'mkt_cap_ard',
-    'M0017126',
+    'mkt_cap_ashare',
+    'csi300_constituents',
+    'csi500_constituents',
+    'csi800_constituents',
 ]
-        
-    
+
+
 class Fundamentals(object):
     def __getattr__(self, name):
         if name in self.colnames:
