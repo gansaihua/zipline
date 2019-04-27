@@ -1,24 +1,20 @@
-from zipline.utils.memoize import classlazyval, remember_last
 from zipline.pipeline.domain import CN_EQUITIES
 from zipline.pipeline.loaders.blaze import from_blaze
+from zipline.utils.memoize import classlazyval, remember_last
 
 import bcolz
 import blaze
 import pandas as pd
 from secdata.utils import bcolz_path
+from secdata.constant import MACRO_PATH
 
 
 INDICATORS = [
-    'tot_assets',
-    'total_shares',
-    'float_a_shares',
-    'mkt_cap_ashare',
-    'mkt_cap_ard',
-    'M0017126',
+    'pmi_manufacturing',
 ]
         
     
-class Fundamentals(object):
+class Macro(object):
     def __getattr__(self, name):
         if name in self.colnames:
             if name.endswith('_asof'):
@@ -44,22 +40,15 @@ class Fundamentals(object):
     
     @staticmethod
     @remember_last
-    def factory(name, use_checkpoints=False):
+    def factory(name):
         ''' Bcolz data entry point'''
-        expr = blaze.data(bcolz_path(name), name=name)
-
-        if use_checkpoints:
-            # 日度数据需要checkpoints加速ffill
-            # TODO
-            pass
-        else:
-            checkpoints = None
+        expr = blaze.data(bcolz_path(name, MACRO_PATH), name=name)
 
         return from_blaze(
             expr,
             domain=CN_EQUITIES,
             deltas=None,
-            checkpoints=checkpoints,
+            checkpoints=None,
             no_deltas_rule='ignore',
             no_checkpoints_rule='ignore',
         )
@@ -68,14 +57,14 @@ class Fundamentals(object):
 #For help hints (.), easy to use
 for k in INDICATORS:
     setattr(
-        Fundamentals, 
+        Macro,
         k, 
         AttributeError,
     )
     setattr(
-        Fundamentals, 
+        Macro,
         k + '_asof',
         AttributeError,
     )
 
-Fundamentals = Fundamentals()
+Macro = Macro()

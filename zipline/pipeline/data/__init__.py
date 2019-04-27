@@ -7,6 +7,7 @@ from .dataset import (
     DataSetFamilySlice,
 )
 from .fundamentals import Fundamentals
+from .macro import Macro
 
 __all__ = [
     'BoundColumn',
@@ -16,5 +17,6 @@ __all__ = [
     'DataSetFamily',
     'DataSetFamilySlice',
     'USEquityPricing',
+    'Macro',
     'Fundamentals',
 ]
