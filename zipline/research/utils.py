@@ -60,9 +60,9 @@ def select_output_by(output, start=None, end=None, assets=None, reduce_format=Tr
         if cond1 & cond2:
             ret = ret.xs((start, assets[0]))
         elif cond1:
-                ret = ret.xs(start, level=0)
+            ret = ret.xs(start, level=0)
         elif cond2:
-                ret = ret.xs(assets[0], level=1)
+            ret = ret.xs(assets[0], level=1)
     return ret
 
 
