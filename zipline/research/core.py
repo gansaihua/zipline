@@ -13,7 +13,7 @@ from zipline.research.constant import (
 def symbols(symbols_,
             symbol_reference_date=None,
             country=None,
-            handle_missing='log'):
+            handle_missing='raise'):
     """
     Convert a or a list of str and int into a list of Asset objects.
     
