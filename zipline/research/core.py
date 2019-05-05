@@ -1,3 +1,5 @@
+import pandas as pd
+from secdata.utils import ensure_list
 from zipline.assets import Asset
 from zipline.data.benchmarks_cn import get_benchmark_returns
 from zipline.research.constant import (
@@ -6,11 +8,6 @@ from zipline.research.constant import (
     DEFAULT_DATA_PORTAL,
     DEFAULT_ASSET_FINDER,
 )
-
-from secdata.utils import ensure_list
-from secdata.reader import get_stock_pricing
-
-import pandas as pd
 
 
 def symbols(symbols_,
