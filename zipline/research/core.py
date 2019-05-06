@@ -1,3 +1,4 @@
+import os
 import pandas as pd
 from secdata.utils import ensure_list
 from zipline.assets import Asset
@@ -8,6 +9,7 @@ from zipline.research.constant import (
     DEFAULT_DATA_PORTAL,
     DEFAULT_ASSET_FINDER,
 )
+from zipline.utils import paths as pth
 
 
 def symbols(symbols_,
@@ -288,10 +290,35 @@ def get_pricing(assets,
             )
 
 
+def get_backtest(backtest_id=None):
+    backtest_dir = pth.zipline_path(['backtest'])
+
+    if backtest_id:
+        backtest_id = backtest_id.split(sep='.', maxsplit=2)[0]
+        perf_file = '{}/{}.pkl'.format(backtest_dir, backtest_id)
+        return pd.read_pickle(perf_file)
+
+    try:
+        candidates = os.listdir(backtest_dir)
+
+        cdt = None
+        for c in candidates:
+            if not c.endswith('.pkl'): continue
+            cpath = os.path.join(backtest_dir, c)
+            if cdt is None or cdt < os.path.getmtime(cpath):
+                cdt = os.path.getmtime(cpath)
+                perf_file = cpath
+        return pd.read_pickle(perf_file)
+    except (ValueError, OSError) as e:
+        if getattr(e, 'errno', errno.ENOENT) != errno.ENOENT:
+            raise
+        raise ValueError('{} Not Found!'.format(backtest_dir))
+
+
 def benchmark_returns(symbol, start, end):
     calendar = DEFAULT_CALENDAR
 
-    start_date = pd.Timestamp(start_date, tz='utc')
+    start = pd.Timestamp(start, tz='utc')
     if not calendar.is_session(start):
         # this is not a trading session, advance to the next session
         start = calendar.minute_to_session_label(
@@ -299,7 +326,7 @@ def benchmark_returns(symbol, start, end):
             direction='previous',
         )
 
-    end_date = pd.Timestamp(end_date, tz='utc')
+    end = pd.Timestamp(end, tz='utc')
     if not calendar.is_session(end):
         # this is not a trading session, advance to the previous session
         end = calendar.minute_to_session_label(
