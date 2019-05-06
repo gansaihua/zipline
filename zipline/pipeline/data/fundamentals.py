@@ -10,6 +10,22 @@ from secdata.utils import bcolz_path
 
 INDICATORS = [
     'tot_assets',
+    'eqy_belongto_parcomsh',
+    'tot_equity',
+    #
+    'net_profit_is',
+    'np_belongto_parcomsh',
+    #
+    'net_cash_flows_oper_act',
+    'net_cash_flows_inv_act',
+    'net_cash_flows_fnc_act',
+    #
+    'roe_basic',
+    'roe_exbasic',
+    'eps_exdiluted',
+    'eps_diluted',
+    'eps_basic',
+    #
     'total_shares',
     'float_a_shares',
     'mkt_cap_ard',
@@ -19,6 +35,7 @@ INDICATORS = [
     'csi500_constituents',
     'csi800_constituents',
     #
+    'sw_sector',
     'sw_agriculture_constituents',
     'sw_mining_constituents',
     'sw_chemicals_constituents',

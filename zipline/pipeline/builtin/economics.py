@@ -14,7 +14,7 @@ pipe4 = Pipeline(
 from zipline.pipeline.factors import CustomFactor
 
 
-class LatestMacroEconomic(CustomFactor):
+class LatestEconomics(CustomFactor):
     window_length = 1
 
     def compute(self, today, asset_ids, out, values):

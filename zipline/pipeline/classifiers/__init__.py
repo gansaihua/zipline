@@ -5,7 +5,6 @@ from .classifier import (
     Everything,
     Latest,
 )
-from .fundamentals import Sector
 
 __all__ = [
     'Classifier',
@@ -13,5 +12,4 @@ __all__ = [
     'Everything',
     'Latest',
     'Quantiles',
-    'Sector',
 ]

@@ -1,5 +1,6 @@
 from zipline.utils.numpy_utils import int64_dtype
 from zipline.pipeline.classifiers.classifier import CustomClassifier
+from zipline.pipeline.data import Fundamentals
 
 
 class Sector(CustomClassifier):
@@ -62,7 +63,7 @@ class Sector(CustomClassifier):
         801880: 'AUTO', # 汽车
         801890: 'MACHINERY', # 机械设备
     }
-    
+    inputs = [Fundamentals.sw_sector]
     window_length = 1
     dtype = int64_dtype
     missing_value = -1

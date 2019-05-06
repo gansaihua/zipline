@@ -1,10 +1,7 @@
-from zipline.pipeline.term import InputDates
-from zipline.pipeline.data import EquityPricing, Fundamentals
-from zipline.pipeline.factors import CustomFactor
-from zipline.pipeline.factors.basic import EWMA, EWMSTD, DailyReturns
-
 import numpy as np
 import pandas as pd
+from zipline.pipeline.data import EquityPricing, Fundamentals
+from zipline.pipeline.factors import CustomFactor
 
 
 class YoYGrowth(CustomFactor):
