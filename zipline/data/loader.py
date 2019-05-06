@@ -19,8 +19,8 @@ import pandas as pd
 from six.moves.urllib_error import HTTPError
 from trading_calendars import get_calendar
 
-from .benchmarks import get_benchmark_returns
-from . import treasuries, treasuries_can
+from .benchmarks_cn import get_benchmark_returns
+from . import treasuries, treasuries_can, treasuries_cn
 from ..utils.paths import (
     cache_root,
     data_root,
@@ -31,6 +31,8 @@ logger = logbook.Logger('Loader')
 
 # Mapping from index symbol to appropriate bond data
 INDEX_MAPPING = {
+    '000300.SH':
+    (treasuries_cn, 'treasury_cn.csv', ''),
     'SPY':
     (treasuries, 'treasury_curves.csv', 'www.federalreserve.gov'),
     '^GSPTSE':
@@ -87,7 +89,7 @@ def has_data_for_dates(series_or_df, first_date, last_date):
     return (first <= first_date) and (last >= last_date)
 
 
-def load_market_data(trading_day=None, trading_days=None, bm_symbol='SPY',
+def load_market_data(trading_day=None, trading_days=None, bm_symbol='000300.SH',
                      environ=None):
     """
     Load benchmark returns and treasury yield curves for the given calendar and
@@ -128,9 +130,9 @@ def load_market_data(trading_day=None, trading_days=None, bm_symbol='SPY',
     '1year','2year','3year','5year','7year','10year','20year','30year'
     """
     if trading_day is None:
-        trading_day = get_calendar('XNYS').day
+        trading_day = get_calendar('XSHG').day
     if trading_days is None:
-        trading_days = get_calendar('XNYS').all_sessions
+        trading_days = get_calendar('XSHG').all_sessions
 
     first_date = trading_days[0]
     now = pd.Timestamp.utcnow()

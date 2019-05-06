@@ -19,9 +19,9 @@ from zipline.data.loader import load_market_data
 from zipline.data.data_portal import DataPortal
 from zipline.finance import metrics
 from zipline.finance.trading import SimulationParameters
-from zipline.pipeline.data import USEquityPricing
-from zipline.pipeline.loaders import USEquityPricingLoader
-
+from zipline.pipeline.data import EquityPricing
+from zipline.pipeline.loaders import EquityPricingLoader
+from zipline.pipeline.loaders.blaze import global_loader
 import zipline.utils.paths as pth
 from zipline.extensions import load
 from zipline.algorithm import TradingAlgorithm
@@ -126,7 +126,7 @@ def _run(handle_data,
             click.echo(algotext)
 
     if trading_calendar is None:
-        trading_calendar = get_calendar('XNYS')
+        trading_calendar = get_calendar('XSHG')
 
     # date parameter validation
     if trading_calendar.session_distance(start, end) < 1:
@@ -155,14 +155,16 @@ def _run(handle_data,
         adjustment_reader=bundle_data.adjustment_reader,
     )
 
-    pipeline_loader = USEquityPricingLoader(
+    pipeline_loader = EquityPricingLoader(
         bundle_data.equity_daily_bar_reader,
         bundle_data.adjustment_reader,
     )
 
     def choose_loader(column):
-        if column in USEquityPricing.columns:
+        if column.unspecialize() in EquityPricing.columns:
             return pipeline_loader
+        elif column in global_loader:
+            return global_loader
         raise ValueError(
             "No PipelineLoader registered for column %s." % column
         )
@@ -276,7 +278,7 @@ def run_algorithm(start,
                   before_trading_start=None,
                   analyze=None,
                   data_frequency='daily',
-                  bundle='quantopian-quandl',
+                  bundle='cndaily',
                   bundle_timestamp=None,
                   trading_calendar=None,
                   metrics_set='default',
