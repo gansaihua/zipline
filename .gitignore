@@ -47,6 +47,7 @@ nosetests.xml
 *.out
 # git add -f if needed
 *.c
+*.pyd
 
 # Vim
 *.swp
