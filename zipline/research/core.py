@@ -106,7 +106,7 @@ def prices(assets,
         # this is not a trading session, advance to the next session
         start = calendar.minute_to_session_label(
             start,
-            direction='previous',
+            direction='next',
         )
 
     end = pd.Timestamp(end, tz='utc')
@@ -323,7 +323,7 @@ def benchmark_returns(symbol, start, end):
         # this is not a trading session, advance to the next session
         start = calendar.minute_to_session_label(
             start,
-            direction='previous',
+            direction='next',
         )
 
     end = pd.Timestamp(end, tz='utc')

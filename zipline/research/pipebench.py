@@ -27,7 +27,7 @@ def run_pipeline(pipeline, start_date, end_date):
         # this is not a trading session, advance to the next session
         start_date = calendar.minute_to_session_label(
             start_date,
-            direction='previous',
+            direction='next',
         )
 
     end_date = pd.Timestamp(end_date, tz='utc')
