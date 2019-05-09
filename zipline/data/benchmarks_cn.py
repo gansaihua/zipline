@@ -1,4 +1,4 @@
-from secdata.reader import get_index_pricing
+from secdata.reader import get_pricing
 
 
 def get_benchmark_returns(symbol='000300.SH', start=None, end=None, periods=1):
@@ -12,5 +12,5 @@ def get_benchmark_returns(symbol='000300.SH', start=None, end=None, periods=1):
     
     return : pd.Seris
     """
-    df = get_index_pricing(symbol, start, end)['close']
+    df = get_pricing(symbol, start, end)['close']
     return df.tz_localize('UTC').pct_change(periods).iloc[periods:]

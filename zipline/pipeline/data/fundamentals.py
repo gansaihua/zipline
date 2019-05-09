@@ -1,11 +1,10 @@
-from zipline.utils.memoize import classlazyval, remember_last
-from zipline.pipeline.domain import CN_EQUITIES
-from zipline.pipeline.loaders.blaze import from_blaze
-
 import bcolz
 import blaze
 import pandas as pd
 from secdata.utils import bcolz_path
+from zipline.pipeline.domain import CN_EQUITIES
+from zipline.pipeline.loaders.blaze import from_blaze
+from zipline.utils.memoize import classlazyval, remember_last
 
 
 INDICATORS = [
@@ -97,9 +96,7 @@ class Fundamentals(object):
         ''' Bcolz data entry point'''
         expr = blaze.data(bcolz_path(name), name=name)
 
-        if use_checkpoints:
-            # 日度数据需要checkpoints加速ffill
-            # TODO
+        if use_checkpoints: # 日度数据需要checkpoints加速ffill
             pass
         else:
             checkpoints = None

@@ -1,3 +1,4 @@
+import numpy as np
 from zipline.utils.numpy_utils import int64_dtype
 from zipline.pipeline.classifiers.classifier import CustomClassifier
 from zipline.pipeline.data import Fundamentals
@@ -62,6 +63,7 @@ class Sector(CustomClassifier):
         801790: 'NONBANK_FINANCIALS', # 非银金融
         801880: 'AUTO', # 汽车
         801890: 'MACHINERY', # 机械设备
+        -1: 'Unknown',
     }
     inputs = [Fundamentals.sw_sector]
     window_length = 1
@@ -69,4 +71,5 @@ class Sector(CustomClassifier):
     missing_value = -1
     
     def compute(self, today, assets, out, cats):
-        out[:] = cats[0]
+        flag = ~np.isnan(cats[-1])
+        out[flag] = cats[-1, flag]

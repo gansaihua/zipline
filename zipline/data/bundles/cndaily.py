@@ -1,9 +1,8 @@
 import pandas as pd
 from logbook import Logger
-from trading_calendars import get_calendar
 from zipline.data.bundles.core import register
 from secdata.utils import sanitize_ohlcv
-from secdata.reader import read_stkcode, get_stock_pricing
+from secdata.reader import read_stkcode, get_pricing
 
 
 log = Logger(__name__)
@@ -62,7 +61,7 @@ def gen_exchange_info():
 
 def _pricing_iter(sids, splits):
     for sid in sids:
-        data = get_stock_pricing(sid, post_func=sanitize_ohlcv, zfill=True)
+        data = get_pricing(sid, post_func=sanitize_ohlcv, zfill=True)
 
         if data.empty:
             raise "{} don't have ohlcv".format(sid)
