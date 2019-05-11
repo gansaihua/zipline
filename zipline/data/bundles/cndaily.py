@@ -13,7 +13,6 @@ from secdata.reader import (
     read_futcode,
     get_pricing,
     get_asset_class,
-    get_futures_root_symbols,
 )
 
 
@@ -32,10 +31,10 @@ def cndaily_bundle(environ,
                    show_progress,
                    output_dir):
 
-    stocks = gen_stock_metadata()
-    indices = gen_index_metadata()
+    stocks = gen_stock_metadata([1, 2])
+    indices = gen_index_metadata([3624, 3625])
     futures = gen_futures_metadata()
-    root_symbols = gen_futures_root_symbols()
+    root_symbols = gen_futures_root_symbols(futures)
     exchanges = gen_exchanges_metadata()
 
     equities = pd.concat([stocks, indices])
@@ -88,10 +87,9 @@ def gen_futures_metadata(sids=None):
     return data.set_index('sid')
 
 
-def gen_futures_root_symbols():
-    data = get_futures_root_symbols()
-
-    data['sid'] = range(100000, len(data)+100000)
+def gen_futures_root_symbols(data):
+    data = data[['root_symbol', 'exchange']].drop_duplicates()
+    data['root_symbol_id'] = range(len(data))
 
     return data
 

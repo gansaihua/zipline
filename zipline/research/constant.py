@@ -21,6 +21,7 @@ DEFAULT_DATA_PORTAL = DataPortal(
     DEFAULT_CALENDAR,
     DEFAULT_CALENDAR.first_session,
     equity_daily_reader=DEFAULT_BUNDLE_DATA.equity_daily_bar_reader,
+    future_daily_reader=DEFAULT_BUNDLE_DATA.equity_daily_bar_reader,
     adjustment_reader=DEFAULT_BUNDLE_DATA.adjustment_reader
 )
 

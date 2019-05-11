@@ -1,7 +1,6 @@
 import os
 import pandas as pd
 from secdata.utils import ensure_list
-from zipline.assets import Asset
 from zipline.data.benchmarks_cn import get_benchmark_returns
 from zipline.research.constant import (
     DEFAULT_COUNTRY,
@@ -12,7 +11,7 @@ from zipline.research.constant import (
 from zipline.utils import paths as pth
 
 
-def symbols(symbols_,
+def symbols(assets,
             symbol_reference_date=None,
             country=None,
             handle_missing='raise'):
@@ -33,34 +32,17 @@ def symbols(symbols_,
 
     list of Asset objects – The symbols that were requested.
     """
-    if isinstance(symbols_, Asset):
-        return [symbols_]
-
     if country is None:
         country = DEFAULT_COUNTRY
-    
-    symbols_ = ensure_list(symbols_)
 
     if symbol_reference_date is not None:
         asof_date = pd.Timestamp(symbol_reference_date, tz='UTC')
     else:
         asof_date = pd.Timestamp('today', tz='UTC')
 
-    ret = []
     finder = DEFAULT_ASSET_FINDER
-    for symbol in symbols_:
-        if isinstance(symbol, str):
-            res = finder.lookup_symbol(
-                symbol, asof_date, country_code=country
-            )
-            ret.append(res)
-        elif isinstance(symbol, int):
-            res = finder.retrieve_asset(symbol)
-            ret.append(res)
-        elif isinstance(symbol, Asset):
-            ret.append(symbol)
 
-    return ret
+    return finder.lookup_generic(assets, asof_date, country)[0]
 
     
 def prices(assets,
@@ -249,10 +231,15 @@ def get_pricing(assets,
      data is returned as a DataFrame with a DatetimeIndex and a columns given by the passed symbols.
     If both parameters are passed as strings, data is returned as a Series.
     '''
-    assets = symbols(assets, symbol_reference_date, DEFAULT_COUNTRY, handle_missing)
+    assets = symbols(assets,
+                     symbol_reference_date,
+                     DEFAULT_COUNTRY,
+                     handle_missing)
 
     if fields is None:
         fields = ['open', 'high', 'low', 'close', 'volume']
+
+    assets = ensure_list(assets)
     fields = ensure_list(fields)
 
     n_assets = len(assets)
