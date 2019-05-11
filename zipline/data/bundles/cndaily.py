@@ -38,6 +38,7 @@ def cndaily_bundle(environ,
     exchanges = gen_exchanges_metadata()
 
     equities = pd.concat([stocks, indices])
+    full_assets = pd.concat([equities, futures])
 
     asset_db_writer.write(
         equities=equities,
@@ -47,9 +48,8 @@ def cndaily_bundle(environ,
     )
 
     splits = []
-    daily_bar_writer.write(_pricing_iter(equities.index, splits),
+    daily_bar_writer.write(_pricing_iter(full_assets.index, splits),
                            show_progress=show_progress)
-
 
     adjustment_writer.write(
         splits=pd.concat(splits, ignore_index=True)
@@ -57,8 +57,8 @@ def cndaily_bundle(environ,
     )
 
 
-def gen_stock_metadata():
-    data = read_stkcode().drop('end_date', axis=1).rename(
+def gen_stock_metadata(sids=None):
+    data = read_stkcode(sid=sids).drop('end_date', axis=1).rename(
         columns={'last_traded': 'end_date'})
 
     data['auto_close_date'] = data['end_date'].values + pd.Timedelta(days=1)
@@ -66,8 +66,8 @@ def gen_stock_metadata():
     return data.set_index('sid')
 
 
-def gen_index_metadata():
-    data = read_idxcode().drop('end_date', axis=1).rename(
+def gen_index_metadata(sids=None):
+    data = read_idxcode(sid=sids).drop('end_date', axis=1).rename(
         columns={'last_traded': 'end_date'})
 
     data['exchange'] = 'XSHG'
@@ -76,8 +76,8 @@ def gen_index_metadata():
     return data.set_index('sid')
 
 
-def gen_futures_metadata():
-    data = read_futcode().rename(columns={
+def gen_futures_metadata(sids=None):
+    data = read_futcode(sid=sids).rename(columns={
         'end_date': 'expiration_date',
         'last_traded': 'end_date',
     })
