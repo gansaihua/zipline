@@ -1,8 +1,19 @@
 import pandas as pd
 from logbook import Logger
 from zipline.data.bundles.core import register
-from secdata.utils import sanitize_ohlcv
-from secdata.reader import read_stkcode, get_pricing
+from trading_calendars import register_calendar_alias
+from secdata.utils import (
+    fill_ohlcv,
+    sanitize_ohlcv,
+)
+from secdata.reader import (
+    read_stkcode,
+    read_idxcode,
+    read_futcode,
+    get_pricing,
+    get_asset_class,
+    get_futures_root_symbols,
+)
 
 
 log = Logger(__name__)
@@ -20,17 +31,25 @@ def cndaily_bundle(environ,
                    show_progress,
                    output_dir):
 
-    metadata = gen_asset_metadata()
-    log.info('Stock numbers: {}'.format(len(metadata)))
+    stocks = gen_stock_metadata()
+    indices = gen_index_metadata()
+    futures = gen_futures_metadata()
+    root_symbols = gen_futures_root_symbols()
+    exchanges = gen_exchanges_metadata()
 
-    splits = []
-    daily_bar_writer.write(_pricing_iter(metadata['sid'], splits),
-                           show_progress=show_progress)
+    equities = pd.concat([stocks, indices])
 
     asset_db_writer.write(
-        equities=metadata,
-        exchanges=gen_exchange_info()
+        equities=equities,
+        futures=futures,
+        root_symbols=root_symbols,
+        exchanges=exchanges,
     )
+
+    splits = []
+    daily_bar_writer.write(_pricing_iter(equities.index, splits),
+                           show_progress=show_progress)
+
 
     adjustment_writer.write(
         splits=pd.concat(splits, ignore_index=True)
@@ -38,35 +57,71 @@ def cndaily_bundle(environ,
     )
 
 
-def gen_asset_metadata(sids=None):
-    data = read_stkcode(sid=sids).drop(
-        ['start_date', 'end_date'], axis=1
-    ).rename(columns={
-        'name': 'asset_name',
-        'first_traded': 'start_date',
-        'last_traded': 'end_date',
-    })
+def gen_stock_metadata():
+    data = read_stkcode().drop('end_date', axis=1).rename(
+        columns={'last_traded': 'end_date'})
+
+    data['auto_close_date'] = data['end_date'].values + pd.Timedelta(days=1)
+
+    return data.set_index('sid')
+
+
+def gen_index_metadata():
+    data = read_idxcode().drop('end_date', axis=1).rename(
+        columns={'last_traded': 'end_date'})
 
     data['exchange'] = 'XSHG'
     data['auto_close_date'] = data['end_date'].values + pd.Timedelta(days=1)
 
+    return data.set_index('sid')
+
+
+def gen_futures_metadata():
+    data = read_futcode().rename(columns={
+        'end_date': 'expiration_date',
+        'last_traded': 'end_date',
+    })
+
+    data['auto_close_date'] = data['end_date'].values + pd.Timedelta(days=1)
+
+    return data.set_index('sid')
+
+
+def gen_futures_root_symbols():
+    data = get_futures_root_symbols()
+
+    data['sid'] = range(100000, len(data)+100000)
+
     return data
 
 
-def gen_exchange_info():
-    exchange_records = [('XSHG', 'CN')]
-    column_names = ['exchange', 'country_code']
-    return pd.DataFrame(exchange_records, columns=column_names)
+def gen_exchanges_metadata():
+    return pd.DataFrame.from_records([
+        {'exchange': 'XSHG', 'country_code': 'CN'},
+        {'exchange': 'SSE', 'country_code': 'CN'},
+        {'exchange': 'SZSE', 'country_code': 'CN'},
+        {'exchange': 'CFFEX', 'country_code': 'CN'},
+    ])
 
 
 def _pricing_iter(sids, splits):
     for sid in sids:
-        data = get_pricing(sid, post_func=sanitize_ohlcv, zfill=True)
+        asset_class = get_asset_class(sid)
+
+        if asset_class == 'stock':
+            f = lambda x: sanitize_ohlcv(x, True)
+        elif asset_class == 'index':
+            f = fill_ohlcv
+        elif asset_class == 'futures':
+            f = None
+
+        data = get_pricing(sid, post_func=f)
 
         if data.empty:
             raise "{} don't have ohlcv".format(sid)
 
-        parse_splits(data, splits)
+        if asset_class == 'stock':
+            parse_splits(data, splits)
         
         yield sid, data
 
@@ -81,3 +136,8 @@ def parse_splits(data, out):
     df['sid'] = df['sid'].astype('int64')
 
     out.append(df)
+
+
+register_calendar_alias("SSE", "XSHG")
+register_calendar_alias("SZSE", "XSHG")
+register_calendar_alias("CFFEX", "XSHG")
