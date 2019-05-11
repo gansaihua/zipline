@@ -3,8 +3,9 @@ from logbook import Logger
 from zipline.data.bundles.core import register
 from trading_calendars import register_calendar_alias
 from secdata.utils import (
-    fill_ohlcv,
-    sanitize_ohlcv,
+    sanitize_stock_ohlcv,
+    sanitize_index_ohlcv,
+    sanitize_futures_ohlcv,
 )
 from secdata.reader import (
     read_stkcode,
@@ -109,13 +110,13 @@ def _pricing_iter(sids, splits):
         asset_class = get_asset_class(sid)
 
         if asset_class == 'stock':
-            f = lambda x: sanitize_ohlcv(x, True)
+            f = sanitize_stock_ohlcv
         elif asset_class == 'index':
-            f = fill_ohlcv
+            f = sanitize_index_ohlcv
         elif asset_class == 'futures':
-            f = None
+            f = sanitize_futures_ohlcv
 
-        data = get_pricing(sid, post_func=f)
+        data = get_pricing(sid, post_func=f, asset_class=asset_class)
 
         if data.empty:
             raise "{} don't have ohlcv".format(sid)
