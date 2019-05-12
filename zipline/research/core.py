@@ -14,7 +14,8 @@ from zipline.utils import paths as pth
 def symbols(assets,
             symbol_reference_date=None,
             country=None,
-            handle_missing='raise'):
+            handle_missing='raise',
+            adjustment=None):
     """
     Convert a or a list of str and int into a list of Asset objects.
     
@@ -27,7 +28,8 @@ def symbols(assets,
             that have been held by multiple companies. Defaults to the current time.
         handle_missing ({'raise', 'log', 'ignore'}, optional)
             String specifying how to handle unmatched securities. Defaults to ‘log’.
-
+        adjustment ({'mul', 'add', None}, optional)
+            String specifying how to adjust futures prices
     Returns:	
 
     list of Asset objects – The symbols that were requested.
@@ -49,7 +51,7 @@ def symbols(assets,
     for s in ensure_list(missing):
         try:
             ret.append(finder.create_continuous_future(
-                s, 0, 'volume', 'mul'))
+                s, 0, 'volume', adjustment))
         except:
             pass
 
@@ -201,6 +203,16 @@ def log_returns(assets,
     return df.diff(periods).iloc[periods:]
 
 
+def get_contract(root_symbols, dt):
+    cf = symbols(root_symbols)
+    dt = pd.Timestamp(dt, tz='utc')
+    data_portal = DEFAULT_DATA_PORTAL
+
+    return data_portal.get_spot_value(
+        cf, 'contract', dt, 'daily'
+    )
+
+
 def get_pricing(assets,
                 start_date='2018-01-03',
                 end_date='2019-01-03',
@@ -208,7 +220,8 @@ def get_pricing(assets,
                 frequency='daily',
                 fields=None,
                 handle_missing='raise',
-                start_offset=0):
+                start_offset=0,
+                adjustment=None):
     '''
     Load a table of historical trade data.
 
@@ -245,7 +258,8 @@ def get_pricing(assets,
     assets = symbols(assets,
                      symbol_reference_date,
                      DEFAULT_COUNTRY,
-                     handle_missing)
+                     handle_missing,
+                     adjustment)
 
     if fields is None:
         fields = ['open', 'high', 'low', 'close', 'volume']
