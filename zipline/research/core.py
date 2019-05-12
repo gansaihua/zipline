@@ -41,8 +41,19 @@ def symbols(assets,
         asof_date = pd.Timestamp('today', tz='UTC')
 
     finder = DEFAULT_ASSET_FINDER
+    assets = ensure_list(assets)
 
-    return finder.lookup_generic(assets, asof_date, country)[0]
+    matches, missing = finder.lookup_generic(assets, asof_date, country)
+
+    ret = ensure_list(matches)
+    for s in ensure_list(missing):
+        try:
+            ret.append(finder.create_continuous_future(
+                s, 0, 'volume', 'mul'))
+        except:
+            pass
+
+    return ret
 
     
 def prices(assets,

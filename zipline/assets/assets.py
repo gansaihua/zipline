@@ -257,6 +257,9 @@ def _encode_continuous_future_sid(root_symbol,
     # are needed, the size of the root symbol does not need to change, however
     # writing the string directly will need to change to a scheme of writing
     # the A-Z values in 5-bit chunks.
+    if len(root_symbol) == 1:
+        root_symbol *= 2
+
     a = array.array('B', [0] * s.size)
     rs = bytearray(root_symbol, 'ascii')
     values = (SID_TYPE_IDS[ContinuousFuture],
