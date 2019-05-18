@@ -1,7 +1,27 @@
 import numpy as np
 import pandas as pd
-from zipline.pipeline.data import EquityPricing, Fundamentals
+from zipline.pipeline.data import EquityPricing
 from zipline.pipeline.factors import CustomFactor
+
+
+class LatestEconomics(CustomFactor):
+    '''
+    To use the single value datasets (ie ones that don't have a value for each asset)
+    one needs to ceate a simple custom factor
+
+    pipe4 = Pipeline(
+        columns={
+            'pmi_manufacturing': LatestMacroEconomic(inputs=[MacroEconomic.pmi_manufacturing]),
+            'pmi_manufacturing_asof': LatestMacroEconomic(inputs=[MacroEconomic.pmi_manufacturing_asof],
+                                                            dtype=np.dtype('datetime64[ns]')),
+        },
+        domain=CN_EQUITIES,
+    )
+    '''
+    window_length = 1
+
+    def compute(self, today, asset_ids, out, values):
+        out[:] = values[-1]
 
 
 class YoYGrowth(CustomFactor):
@@ -40,33 +60,14 @@ class PreviousYear(CustomFactor):
                 ret = quarterly_values[-nobs]
             
             out[col_ix] = ret
-            
 
-class _BaseBiMul(CustomFactor):
-    window_length = 1
-    window_safe = True
-    
-    def compute(self, today, assets, out, left, right):
-        out[:] = left[-1] * right[-1]
-        
 
-class _BasePosDiv(CustomFactor):
+class PositiveDivide(CustomFactor):
     window_length = 1
     window_safe = True
     
     def compute(self, today, assets, out, nom, denom):
-        mask = denom[-1] <= 0    
-        denom[-1, mask] = np.nan
-        
         out[:] = nom[-1] / denom[-1]
-        
-        
-class Momentum(CustomFactor): 
-    '''Default: price return changes from -244 days to -21 days
-    '''
-    inputs = (EquityPricing.close,)
-    params = {'t0': 21} # to which day
-    window_length = 244 # from which day
 
-    def compute(self, today, assets, out, close, t0):  
-        out[:] = close[-t0] / close[0] - 1
+        mask = denom[-1] <= 0
+        out[mask] = np.nan

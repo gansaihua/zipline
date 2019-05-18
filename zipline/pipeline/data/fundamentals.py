@@ -9,9 +9,12 @@ from zipline.utils.memoize import classlazyval, remember_last
 
 INDICATORS = [
     'tot_assets',
+    'tot_liab',
     'eqy_belongto_parcomsh',
     'tot_equity',
     #
+    'tot_oper_rev',
+    'oper_rev',
     'net_profit_is',
     'np_belongto_parcomsh',
     #

@@ -1,7 +1,7 @@
 import numpy as np
 from zipline.utils.numpy_utils import int64_dtype
-from zipline.pipeline.classifiers.classifier import CustomClassifier
 from zipline.pipeline.data import Fundamentals
+from zipline.pipeline.classifiers.classifier import CustomClassifier
 
 
 class Sector(CustomClassifier):
