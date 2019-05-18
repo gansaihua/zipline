@@ -8,35 +8,36 @@ from zipline.utils.memoize import classlazyval, remember_last
 
 
 INDICATORS = [
+    # balance sheet
     'tot_assets',
     'tot_liab',
     'eqy_belongto_parcomsh',
     'tot_equity',
-    #
+    # income statement
     'tot_oper_rev',
     'oper_rev',
     'net_profit_is',
     'np_belongto_parcomsh',
-    #
+    # cashflow statement
     'net_cash_flows_oper_act',
     'net_cash_flows_inv_act',
     'net_cash_flows_fnc_act',
-    #
+    # financial indicator
     'roe_basic',
     'roe_exbasic',
     'eps_exdiluted',
     'eps_diluted',
     'eps_basic',
-    #
+    # shares outstanding
     'total_shares',
     'float_a_shares',
     'mkt_cap_ard',
     'mkt_cap_ashare',
-    #
+    # index membership
     'csi300_constituents',
     'csi500_constituents',
     'csi800_constituents',
-    #
+    # sector membership
     'sw_sector',
     'sw_agriculture_constituents',
     'sw_mining_constituents',

@@ -42,5 +42,5 @@ class PCFRatio(PositiveDivide):
 class PSRatio(PositiveDivide):
     inputs = [
         Fundamentals.mkt_cap_ard,
-        Fundamentals.net_cash_flows_oper_act
+        Fundamentals.tot_oper_rev
     ]
