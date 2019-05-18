@@ -517,9 +517,10 @@ class SimpleBeta(CustomFactor, StandardOutputs):
     def __new__(cls,
                 target,
                 regression_length,
+                returns_length=2,
                 allowed_missing_percentage=0.25):
         daily_returns = Returns(
-            window_length=2,
+            window_length=returns_length,
             mask=(AssetExists() | SingleAsset(asset=target)),
         )
         allowed_missing_count = int(

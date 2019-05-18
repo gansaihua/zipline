@@ -4,6 +4,7 @@ from zipline.assets import Equity
 from zipline.assets.exchange_info import ExchangeInfo
 from zipline.pipeline.data import EquityPricing, Fundamentals
 from zipline.pipeline.factors import (
+    Returns,
     SimpleBeta,
     CustomFactor,
     AnnualizedVolatility,
@@ -67,13 +68,27 @@ class ROA(PositiveDivide):
 
 NetMargin = lambda: Fundamentals.net_profit_is.latest / Fundamentals.tot_oper_rev.latest
 DebtToAsset = lambda: Fundamentals.tot_liab.latest / Fundamentals.tot_assets.latest
-Risk = lambda: AnnualizedVolatility(window_length=244, annualization_factor=244)
 
-benchmark = Equity.from_dict({
-    'sid': 3623,
-    'symbol': '000300.SH',
-    'first_traded': pd.Timestamp('2004-12-31', tz='UTC'),
-    'start_date': pd.Timestamp('2005-04-08', tz='UTC'),
-    'exchange_info': ExchangeInfo('XSHG', 'XSHG', 'CN'),
-})
-Beta = lambda: SimpleBeta(target=benchmark, regression_length=244)
+
+def Risk(returns_length=2, window_length=244, annulization_factor=244):
+    return AnnualizedVolatility(
+        inputs=[Returns(window_length=returns_length)],
+        window_length=window_length,
+        annualization_factor=annulization_factor,
+    )
+
+
+def Beta(returns_length=2, window_length=244):
+    benchmark = Equity.from_dict({
+        'sid': 3623,
+        'symbol': '000300.SH',
+        'first_traded': pd.Timestamp('2004-12-31', tz='UTC'),
+        'start_date': pd.Timestamp('2005-04-08', tz='UTC'),
+        'exchange_info': ExchangeInfo('XSHG', 'XSHG', 'CN'),
+    })
+
+    return SimpleBeta(
+        target=benchmark,
+        returns_length=returns_length,
+        regression_length=window_length,
+    )
