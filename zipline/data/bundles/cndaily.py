@@ -117,7 +117,8 @@ def _pricing_iter(sids, splits):
         data = get_pricing(sid, post_func=f, asset_class=asset_class)
 
         if data.empty:
-            raise "{} don't have ohlcv".format(sid)
+            continue
+            # raise "{} don't have ohlcv".format(sid)
 
         if asset_class == 'stock':
             parse_splits(data, splits)
