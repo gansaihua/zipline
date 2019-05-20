@@ -9,13 +9,21 @@ from zipline.utils.memoize import classlazyval, remember_last
 
 INDICATORS = [
     # balance sheet
+    'acct_rcv',
+    'inventories',
+    'tot_cur_assets',
     'tot_assets',
+    'acct_payable',
+    'tot_cur_liab',
     'tot_liab',
     'eqy_belongto_parcomsh',
     'tot_equity',
     # income statement
     'tot_oper_rev',
     'oper_rev',
+    'tot_oper_cost',
+    'oper_cost',
+    'opprofit',
     'net_profit_is',
     'np_belongto_parcomsh',
     # cashflow statement
@@ -37,6 +45,7 @@ INDICATORS = [
     'csi300_constituents',
     'csi500_constituents',
     'csi800_constituents',
+    'csi1000_constituents',
     # sector membership
     'sw_sector',
     'sw_agriculture_constituents',
