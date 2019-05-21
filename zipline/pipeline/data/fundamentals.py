@@ -8,6 +8,10 @@ from zipline.utils.memoize import classlazyval, remember_last
 
 
 INDICATORS = [
+    # metadata
+    'is_financial',
+    'shareholder_type',
+    'listing_by_shell',
     # balance sheet
     'acct_rcv',
     'inventories',

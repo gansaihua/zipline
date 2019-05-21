@@ -67,8 +67,8 @@ def gen_stock_metadata(sids=None):
 
 
 def gen_index_metadata(sids=None):
-    data = read_idxcode(sid=sids).drop('end_date', axis=1).rename(
-        columns={'last_traded': 'end_date'})
+    data = read_idxcode(sid=sids).drop(['start_date', 'end_date'], axis=1).rename(
+        columns={'last_traded': 'end_date', 'first_traded': 'start_date'})
 
     data['exchange'] = 'XSHG'
     data['auto_close_date'] = data['end_date'].values + pd.Timedelta(days=1)
