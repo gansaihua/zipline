@@ -41,6 +41,8 @@ INDICATORS = [
     'eps_diluted',
     'eps_basic',
     # shares outstanding
+    'turn',
+    'amt',
     'total_shares',
     'float_a_shares',
     'mkt_cap_ard',

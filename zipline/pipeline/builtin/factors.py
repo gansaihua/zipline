@@ -5,11 +5,44 @@ from zipline.assets.exchange_info import ExchangeInfo
 from zipline.pipeline.data import EquityPricing, Fundamentals
 from zipline.pipeline.factors import (
     Returns,
+    DailyReturns,
     SimpleBeta,
     CustomFactor,
     AnnualizedVolatility,
 )
-from .utils import PositiveDivide
+from .utils import PositiveDivide, YoYGrowth
+
+
+def Investment():
+    return YoYGrowth(inputs=[Fundamentals.tot_assets_asof,
+                             Fundamentals.tot_assets]),
+
+
+class Illiquidity(CustomFactor):
+    inputs = [DailyReturns(), Fundamentals.amt]
+    window_length = 20
+    missing_value = 0
+
+    def compute(self, today, assets, out, r, amount):
+        out[:] = np.nanmean(np.abs(r) / amount, axis=0)
+
+
+class Turnover(CustomFactor):
+    inputs = [Fundamentals.turn]
+    window_length = 250
+    missing_value = 0
+
+    def compute(self, today, assets, out, turnover):
+        out[:] = np.nanmean(turnover, axis=0)
+
+
+class AbnormalTurnover(CustomFactor):
+    inputs = [Fundamentals.turn]
+    window_length = 250
+    missing_value = 0
+
+    def compute(self, today, assets, out, turnover):
+        out[:] = np.nanmean(turnover[-20:], axis=0) / np.nanmean(turnover, axis=0)
 
 
 class Momentum(CustomFactor): 
@@ -52,22 +85,12 @@ class PSRatio(PositiveDivide):
     ]
 
 
-class ROE(PositiveDivide):
-    inputs = [
-        Fundamentals.net_profit_is,
-        Fundamentals.tot_equity
-    ]
+class MaxReturns(CustomFactor):
+    inputs = [DailyReturns()]
+    window_length = 20
 
-
-class ROA(PositiveDivide):
-    inputs = [
-        Fundamentals.net_profit_is,
-        Fundamentals.tot_assets,
-    ]
-
-
-NetMargin = lambda: Fundamentals.net_profit_is.latest / Fundamentals.tot_oper_rev.latest
-DebtToAsset = lambda: Fundamentals.tot_liab.latest / Fundamentals.tot_assets.latest
+    def compute(self, today, assets, out, r):
+        out[:] = np.nanmax(r, axis=0)
 
 
 def Risk(returns_length=2, window_length=244, annulization_factor=244):
@@ -92,3 +115,5 @@ def Beta(returns_length=2, window_length=244):
         returns_length=returns_length,
         regression_length=window_length,
     )
+
+
