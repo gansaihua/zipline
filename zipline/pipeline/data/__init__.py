@@ -6,6 +6,7 @@ from .dataset import (
     DataSetFamily,
     DataSetFamilySlice,
 )
+from .equity_daily import EquityMetrics
 from .fundamentals import Fundamentals
 from .economics import Economics
 
@@ -17,6 +18,7 @@ __all__ = [
     'DataSetFamily',
     'DataSetFamilySlice',
     'USEquityPricing',
+    'EquityMetrics',
     'Economics',
     'Fundamentals',
 ]

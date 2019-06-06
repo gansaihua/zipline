@@ -31,9 +31,9 @@ def cndaily_bundle(environ,
                    show_progress,
                    output_dir):
 
-    stocks = gen_stock_metadata()
-    indices = gen_index_metadata()
-    futures = gen_futures_metadata()
+    stocks = gen_stock_metadata(sids=[1, 2, 3])
+    indices = gen_index_metadata(sids=[3621])
+    futures = gen_futures_metadata(sids=[8000])
     root_symbols = gen_futures_root_symbols(futures)
     exchanges = gen_exchanges_metadata()
 
