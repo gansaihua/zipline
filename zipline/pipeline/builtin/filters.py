@@ -56,8 +56,8 @@ def TopAverageAmount(N=30, window_length=21):
 
 
 def LargeCap():
-    return Fundamentals.csi300_constituents.latest.eq(1)
+    return Fundamentals.memb_csi300.latest.eq(1)
 
 
 def MidCap():
-    return Fundamentals.csi500_constituents.latest.eq(1)
+    return Fundamentals.memb_csi500.latest.eq(1)
