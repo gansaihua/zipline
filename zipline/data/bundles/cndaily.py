@@ -1,18 +1,14 @@
+import numpy as np
 import pandas as pd
 from logbook import Logger
 from zipline.data.bundles.core import register
 from trading_calendars import register_calendar_alias
-from secdata.utils import (
-    sanitize_stock_ohlcv,
-    sanitize_index_ohlcv,
-    sanitize_futures_ohlcv,
-)
-from secdata.reader import (
-    read_stkcode,
-    read_idxcode,
-    read_futcode,
-    get_pricing,
-    get_asset_class,
+
+from secdb.reader import (
+    get_stock_meta,
+    get_index_meta,
+    get_stock_pricing,
+    get_index_pricing,
 )
 
 
@@ -31,24 +27,12 @@ def cndaily_bundle(environ,
                    show_progress,
                    output_dir):
 
-    stocks = gen_stock_metadata(sids=[1, 2, 3])
-    indices = gen_index_metadata(sids=[3621])
-    futures = gen_futures_metadata(sids=[8000])
-    root_symbols = gen_futures_root_symbols(futures)
-    exchanges = gen_exchanges_metadata()
-
-    equities = pd.concat([stocks, indices])
-    full_assets = pd.concat([equities, futures])
-
-    asset_db_writer.write(
-        equities=equities,
-        futures=futures,
-        root_symbols=root_symbols,
-        exchanges=exchanges,
-    )
+    stocks = gen_stock_metadata(sids=None)
+    indices = gen_index_metadata(sids=None)
+    equities_meta = pd.concat([stocks, indices])
 
     splits = []
-    daily_bar_writer.write(_pricing_iter(full_assets.index, splits),
+    daily_bar_writer.write(_pricing_iter(equities_meta, calendar, splits),
                            show_progress=show_progress)
 
     adjustment_writer.write(
@@ -56,41 +40,35 @@ def cndaily_bundle(environ,
         if len(splits) > 0 else None,
     )
 
+    asset_db_writer.write(
+        equities=equities_meta,
+        exchanges=gen_exchanges_metadata(),
+    )
+
 
 def gen_stock_metadata(sids=None):
-    data = read_stkcode(sid=sids).drop('end_date', axis=1).rename(
-        columns={'last_traded': 'end_date'})
+    data = get_stock_meta(sids).rename(columns={
+        'Symbol': 'symbol',
+        'Name_': 'asset_name',
+        'StartDate': 'start_date',
+        'EndDate': 'end_date',
+        })
 
-    data['auto_close_date'] = data['end_date'].values + pd.Timedelta(days=1)
-
-    return data.set_index('sid')
+    data['end_date'] = data['end_date'].fillna('2050-1-1')
+    data['exchange'] = 'XSHG'
+    return data
 
 
 def gen_index_metadata(sids=None):
-    data = read_idxcode(sid=sids).drop(['start_date', 'end_date'], axis=1).rename(
-        columns={'last_traded': 'end_date', 'first_traded': 'start_date'})
+    data = get_index_meta(sids).rename(columns={
+        'Symbol': 'symbol',
+        'Name_': 'asset_name',
+        'StartDate': 'start_date',
+        'EndDate': 'end_date',
+        })
 
+    data['end_date'] = data['end_date'].fillna('2050-1-1')
     data['exchange'] = 'XSHG'
-    data['auto_close_date'] = data['end_date'].values + pd.Timedelta(days=1)
-
-    return data.set_index('sid')
-
-
-def gen_futures_metadata(sids=None):
-    data = read_futcode(sid=sids).rename(columns={
-        'end_date': 'expiration_date',
-        'last_traded': 'end_date',
-    })
-
-    data['auto_close_date'] = data['end_date'].values + pd.Timedelta(days=1)
-
-    return data.set_index('sid')
-
-
-def gen_futures_root_symbols(data):
-    data = data[['root_symbol', 'exchange']].drop_duplicates()
-    data['root_symbol_id'] = range(len(data))
-
     return data
 
 
@@ -103,37 +81,52 @@ def gen_exchanges_metadata():
     ])
 
 
-def _pricing_iter(sids, splits):
-    for sid in sids:
-        asset_class = get_asset_class(sid)
+def _pricing_iter(equities_meta, calendar, splits):
+    fields = ['P_OPEN', 'P_HIGH', 'P_LOW', 'P_CLOSE', 'P_VOLUME']
 
-        if asset_class == 'stock':
-            f = sanitize_stock_ohlcv
+    for sid, row in equities_meta.iterrows():
+        asset_class = row['Asset']
+        if asset_class == 'equity':
+            data = get_stock_pricing(sid, fields+['P_FACTOR']).rename(columns=lambda x: x.lower()[2:])
+            if data.empty:
+                log.info("{} don't have ohlcv".format(sid))
+                continue
+
+            parse_splits(sid, data, splits)
         elif asset_class == 'index':
-            f = sanitize_index_ohlcv
-        elif asset_class == 'futures':
-            f = sanitize_futures_ohlcv
+            data = get_index_pricing(sid, fields).rename(columns=lambda x: x.lower()[2:])
+            if data.empty:
+                log.info("{} don't have ohlcv".format(sid))
+                continue
 
-        data = get_pricing(sid, post_func=f, asset_class=asset_class)
+            data['open'] = data['open'].fillna(data['close'])
+            data['high'] = data['high'].fillna(data['close'])
+            data['low'] = data['low'].fillna(data['close'])
+            data['volume'] = data['volume'].fillna(9999)
+        else:
+            raise Exception('Not supported asset')
 
-        if data.empty:
-            continue
-            # raise "{} don't have ohlcv".format(sid)
+        sessions = calendar.sessions_in_range(data.index[0], data.index[-1])
+        data = data.reindex(sessions.tz_localize(None))
 
-        if asset_class == 'stock':
-            parse_splits(data, splits)
-        
+        data['volume'] = data['volume'].fillna(0)
+        mask = data['volume'] == 0
+        data.loc[mask, ['open', 'high', 'low', 'close']] = 0
+
+        limit = np.iinfo(np.uint32).max
+        mask = data['volume'] > limit
+        data.loc[mask, 'volume'] = limit - 1
+
         yield sid, data
 
 
-def parse_splits(data, out):
-    df = data[['sid', 'adjfactor']].reset_index()
-    df.columns = ['effective_date', 'sid', 'ratio']
+def parse_splits(sid, data, out):
+    df = data[['factor']].reset_index()
+    df.columns = ['effective_date', 'ratio']
+    df['sid'] = sid
 
     df['ratio'] = df['ratio'].shift(1) / df['ratio']
     df = df[df['ratio']!=1].dropna()
-
-    df['sid'] = df['sid'].astype('int64')
 
     out.append(df)
 

@@ -55,6 +55,7 @@ def SalesYield():
 def CashYield():
     return Fundamentals.cash_recp_sg_and_rs.latest / Fundamentals.mkt_cap_ard.latest
 
+
 ###################
 # Solvency Factors
 ###################
@@ -119,6 +120,7 @@ def ROA():
 
 def ROE():
     return Fundamentals.net_profit_is.latest / Fundamentals.tot_equity.latest
+
 
 ###################
 # Financial Risk Factors
