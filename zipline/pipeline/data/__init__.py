@@ -6,7 +6,7 @@ from .dataset import (
     DataSetFamily,
     DataSetFamilySlice,
 )
-from .equity_daily import EquityMetrics
+from .equity_metrics import EquityMetrics
 from .fundamentals import Fundamentals
 from .economics import Economics
 

@@ -40,6 +40,12 @@ from .technical import (
     RSI,
     TrueRange,
 )
+from .economic import LatestEconomics
+from .fundamentals import (
+    YoYGrowth,
+    PreviousYear,
+    PositiveDivide,
+)
 
 __all__ = [
     'AnnualizedVolatility',
@@ -74,4 +80,8 @@ __all__ = [
     'TrueRange',
     'VWAP',
     'WeightedAverageValue',
+    'LatestEconomics',
+    'YoYGrowth',
+    'PreviousYear',
+    'PositiveDivide',
 ]
