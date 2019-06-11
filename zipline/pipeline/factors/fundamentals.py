@@ -1,5 +1,83 @@
 import numpy as np
+import pandas as pd
+from zipline.assets import Equity
+from zipline.assets.exchange_info import ExchangeInfo
+from zipline.utils.numpy_utils import int64_dtype
+from zipline.pipeline.data import (
+    EquityPricing, EquityMetrics, Fundamentals,
+)
 from .factor import CustomFactor
+from .statistical import SimpleBeta
+from .basic import Returns, DailyReturns, AnnualizedVolatility
+
+
+class MaxReturns(CustomFactor):
+    inputs = [DailyReturns()]
+    window_length = 20
+
+    def compute(self, today, assets, out, r):
+        out[:] = np.nanmax(r, axis=0)
+
+
+def Risk(returns_length=2, window_length=250, annulization_factor=250):
+    return AnnualizedVolatility(
+        inputs=[Returns(window_length=returns_length)],
+        window_length=window_length,
+        annualization_factor=annulization_factor,
+    )
+
+
+def Beta(returns_length=2, window_length=250):
+    benchmark = Equity.from_dict({
+        'sid': 3623,
+        'symbol': '000300.SH',
+        'start_date': pd.Timestamp('2004-12-31', tz='UTC'),
+        'exchange_info': ExchangeInfo('XSHG', 'XSHG', 'CN'),
+    })
+
+    return SimpleBeta(
+        target=benchmark,
+        returns_length=returns_length,
+        regression_length=window_length,
+    )
+
+
+class Illiquidity(CustomFactor):
+    inputs = [DailyReturns(), EquityMetrics.amount]
+    window_length = 20
+    missing_value = 0
+
+    def compute(self, today, assets, out, r, amount):
+        out[:] = np.nanmean(np.abs(r) / amount, axis=0)
+
+
+class Turnover(CustomFactor):
+    inputs = [EquityMetrics.turnover]
+    window_length = 20
+    missing_value = 0
+
+    def compute(self, today, assets, out, turnover):
+        out[:] = np.nanmean(turnover, axis=0)
+
+
+class AbnormalTurnover(CustomFactor):
+    inputs = [EquityMetrics.turnover]
+    window_length = 250
+    missing_value = 0
+
+    def compute(self, today, assets, out, turnover):
+        out[:] = np.nanmean(turnover[-20:], axis=0) / np.nanmean(turnover, axis=0)
+
+
+class Momentum(CustomFactor):
+    '''Default: price return changes from -250 days to -20 days
+    '''
+    inputs = [EquityPricing.close]
+    params = {'t0': 20} # to which day
+    window_length = 250 # from which day
+
+    def compute(self, today, assets, out, close, t0):
+        out[:] = close[-t0] / close[0] - 1
 
 
 class PositiveDivide(CustomFactor):

@@ -1,10 +1,10 @@
-from zipline.utils.numpy_utils import float64_dtype, datetime64ns_dtype
+from zipline.utils.numpy_utils import int64_dtype, float64_dtype, datetime64ns_dtype
 
 from .dataset import Column, DataSet
 
 
 class Fundamentals(DataSet):
-    # broad index
+    # broad index membershiop
     memb_csi300 = Column(float64_dtype, metadata={'blaze_column_name': 'value', 'data_id': 'memb_csi300'})
     memb_csi300_asof_date = Column(datetime64ns_dtype, metadata={'blaze_column_name': 'asof_date', 'data_id': 'memb_csi300'})
     memb_csi500 = Column(float64_dtype, metadata={'blaze_column_name': 'value', 'data_id': 'memb_csi500'})
@@ -13,7 +13,9 @@ class Fundamentals(DataSet):
     memb_csi800_asof_date = Column(datetime64ns_dtype, metadata={'blaze_column_name': 'asof_date', 'data_id': 'memb_csi800'})
     memb_csi1000 = Column(float64_dtype, metadata={'blaze_column_name': 'value', 'data_id': 'memb_csi1000'})
     memb_csi1000_asof_date = Column(datetime64ns_dtype, metadata={'blaze_column_name': 'asof_date', 'data_id': 'memb_csi1000'})
-    # industry index
+    memb_a_share = Column(float64_dtype, metadata={'blaze_column_name': 'value', 'data_id': 'memb_a_share'})
+    memb_a_share_asof_date = Column(datetime64ns_dtype, metadata={'blaze_column_name': 'asof_date', 'data_id': 'memb_a_share'})
+    # sector index membershiop
     memb_communication_services = Column(float64_dtype, metadata={'blaze_column_name': 'value', 'data_id': 'memb_communication_services'})
     memb_communication_services_asof_date = Column(datetime64ns_dtype, metadata={'blaze_column_name': 'asof_date', 'data_id': 'memb_communication_services'})
     memb_consumer_discretionary = Column(float64_dtype, metadata={'blaze_column_name': 'value', 'data_id': 'memb_consumer_discretionary'})
@@ -34,6 +36,7 @@ class Fundamentals(DataSet):
     memb_materials_asof_date = Column(datetime64ns_dtype, metadata={'blaze_column_name': 'asof_date', 'data_id': 'memb_materials'})
     memb_real_estate = Column(float64_dtype, metadata={'blaze_column_name': 'value', 'data_id': 'memb_real_estate'})
     memb_real_estate_asof_date = Column(datetime64ns_dtype, metadata={'blaze_column_name': 'asof_date', 'data_id': 'memb_real_estate'})
+    # industry index membershiop
     memb_sw_agriculture = Column(float64_dtype, metadata={'blaze_column_name': 'value', 'data_id': 'memb_sw_agriculture'})
     memb_sw_agriculture_asof_date = Column(datetime64ns_dtype, metadata={'blaze_column_name': 'asof_date', 'data_id': 'memb_sw_agriculture'})
     memb_sw_appliances = Column(float64_dtype, metadata={'blaze_column_name': 'value', 'data_id': 'memb_sw_appliances'})

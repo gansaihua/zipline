@@ -42,6 +42,13 @@ from .technical import (
 )
 from .economic import LatestEconomics
 from .fundamentals import (
+    Risk,
+    Beta,
+    MaxReturns,
+    Momentum,
+    Illiquidity,
+    Turnover,
+    AbnormalTurnover,
     YoYGrowth,
     PreviousYear,
     PositiveDivide,
@@ -80,7 +87,15 @@ __all__ = [
     'TrueRange',
     'VWAP',
     'WeightedAverageValue',
+    #
     'LatestEconomics',
+    'Risk',
+    'Beta',
+    'MaxReturns',
+    'Momentum',
+    'Illiquidity',
+    'Turnover',
+    'AbnormalTurnover',
     'YoYGrowth',
     'PreviousYear',
     'PositiveDivide',

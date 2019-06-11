@@ -51,9 +51,10 @@ from ._equities import _compute_row_slices, _read_bcolz_data
 logger = logbook.Logger('EquityDailyMetrics')
 
 METRICS = frozenset([
-    'open', 'high', 'low', 'close', 'avg_price', 'turnover',
-    'amount', 'factor','pe', 'pb', 'pcf', 'ps',
-    'shares_tot', 'shares_liq', 'mkt_cap_tot', 'mkt_cap_liq'
+    'open', 'high', 'low', 'close', 'avg_price', 'turnover', 'factor','pe', 'pb', 'pcf', 'ps',
+])
+METRICS_WITHOUT_RESCALE = frozenset([
+    'volume','amount', 'shares_tot', 'shares_liq', 'mkt_cap_tot', 'mkt_cap_liq'
 ])
 US_EQUITY_PRICING_BCOLZ_COLUMNS = (
     'open', 'high', 'low', 'close', 'volume', 'avg_price', 'turnover',
@@ -336,12 +337,12 @@ class BcolzDailyBarWriter(object):
             # we already have a ctable so do nothing
             return raw_data
 
-        winsorise_uint32(raw_data, invalid_data_behavior, 'volume', *METRICS)
         processed = (raw_data[list(METRICS)] * 1000).round().astype('uint32')
         dates = raw_data.index.values.astype('datetime64[s]')
         check_uint32_safe(dates.max().view(np.int64), 'day')
         processed['day'] = dates.astype('uint32')
-        processed['volume'] = raw_data.volume.astype('uint32')
+        for col in METRICS_WITHOUT_RESCALE:
+            processed[col] = raw_data[col].astype('uint32')
         return ctable.fromdataframe(processed)
 
 
@@ -562,9 +563,11 @@ class BcolzDailyBarReader(SessionBarReader):
         )
 
         for i, column in enumerate(columns):
-            if column not in {'open', 'high', 'low', 'close', 'volume'}:
+            if column not in ['open', 'high', 'low', 'close', *METRICS_WITHOUT_RESCALE]:
                 data[i] = data[i].astype(np.float64) * .001
-                data[i][data[i]==0] = np.NAN
+            else:
+                data[i] = data[i].astype(np.float64)
+            data[i][data[i]==0] = np.NAN
 
         return data
 

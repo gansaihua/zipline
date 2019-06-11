@@ -29,16 +29,33 @@ class Sector(CustomClassifier):
         882009: 'COMMUNICATION_SERVICES',
         882010: 'UTILITIES',
         882011: 'REAL_ESTATE',
+        -1: 'Unknown',
     }
 
-    inputs = [Fundamentals.wind_sector]
+    inputs = [
+        Fundamentals.memb_energy,
+        Fundamentals.memb_materials,
+        Fundamentals.memb_industrials,
+        Fundamentals.memb_consumer_discretionary,
+        Fundamentals.memb_consumer_staples,
+        Fundamentals.memb_health_care,
+        Fundamentals.memb_financials,
+        Fundamentals.memb_information_technology,
+        Fundamentals.memb_communication_services,
+        Fundamentals.memb_utilities,
+        Fundamentals.memb_real_estate,
+    ]
     window_length = 1
-    dtype = int64_dtype
     missing_value = -1
+    dtype = int64_dtype
 
-    def compute(self, today, assets, out, cats):
-        flag = ~np.isnan(cats[-1])
-        out[flag] = cats[-1, flag]
+    def compute(self, today, assets, out, *sectors):
+        mul = [882001 + i for i in range(12)]
+        out[:] = np.nansum(
+            np.array([sector[0] * m for sector, m in zip(sectors, mul)]),
+            axis=0, dtype=self.dtype,
+        )
+        out[np.isnan(out)] = self.missing_value
 
 
 class Industry(CustomClassifier):
@@ -102,11 +119,48 @@ class Industry(CustomClassifier):
         801890: 'MACHINERY',  # 机械设备
         -1: 'Unknown',
     }
-    inputs = [Fundamentals.sw_industry]
+    inputs = [
+        Fundamentals.memb_sw_agriculture,
+        Fundamentals.memb_sw_mining,
+        Fundamentals.memb_sw_chemicals,
+        Fundamentals.memb_sw_steel,
+        Fundamentals.memb_sw_metals,
+        Fundamentals.memb_sw_electronics,
+        Fundamentals.memb_sw_appliances,
+        Fundamentals.memb_sw_food,
+        Fundamentals.memb_sw_textiles,
+        Fundamentals.memb_sw_light_manufacturing,
+        Fundamentals.memb_sw_pharmaceuticals,
+        Fundamentals.memb_sw_utilities,
+        Fundamentals.memb_sw_transportation,
+        Fundamentals.memb_sw_real_estate,
+        Fundamentals.memb_sw_commerce,
+        Fundamentals.memb_sw_services,
+        Fundamentals.memb_sw_conglomerate,
+        Fundamentals.memb_sw_building_materials,
+        Fundamentals.memb_sw_building_decorations,
+        Fundamentals.memb_sw_electricals,
+        Fundamentals.memb_sw_defense_military,
+        Fundamentals.memb_sw_it,
+        Fundamentals.memb_sw_media,
+        Fundamentals.memb_sw_communication_services,
+        Fundamentals.memb_sw_banks,
+        Fundamentals.memb_sw_nonbank_financials,
+        Fundamentals.memb_sw_auto,
+        Fundamentals.memb_sw_machinery,
+    ]
     window_length = 1
-    dtype = int64_dtype
     missing_value = -1
+    dtype = int64_dtype
 
-    def compute(self, today, assets, out, cats):
-        flag = ~np.isnan(cats[-1])
-        out[flag] = cats[-1, flag]
+    def compute(self, today, assets, out, *industries):
+        mul = [
+            801010, 801020, 801030, 801040, 801050, 801080, 801110, 801120, 801130, 801140,
+            801150, 801160, 801170, 801180, 801200, 801210, 801230, 801710, 801720, 801730,
+            801740, 801750, 801760, 801770, 801780, 801790, 801880, 801890,
+        ]
+        out[:] = np.nansum(
+            np.array([industry[0] * m for industry, m in zip(industries, mul)]),
+            axis = 0, dtype = self.dtype,
+        )
+        out[np.isnan(out)] = self.missing_value
