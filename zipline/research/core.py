@@ -1,6 +1,6 @@
 import os
 import pandas as pd
-from secdata.utils import ensure_list
+from secdb.utils import ensure_list
 from zipline.data.benchmarks_cn import get_benchmark_returns
 from zipline.research.constant import (
     DEFAULT_COUNTRY,

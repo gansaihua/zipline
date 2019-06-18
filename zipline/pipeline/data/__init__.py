@@ -8,7 +8,6 @@ from .dataset import (
 )
 from .equity_metrics import EquityMetrics
 from .fundamentals import Fundamentals
-from .economics import Economics
 
 __all__ = [
     'BoundColumn',
@@ -19,6 +18,5 @@ __all__ = [
     'DataSetFamilySlice',
     'USEquityPricing',
     'EquityMetrics',
-    'Economics',
     'Fundamentals',
 ]
