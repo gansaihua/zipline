@@ -73,32 +73,21 @@ class ProgressHooks(implements(PipelineHooks)):
             self._reset_transient_state()
 
     @contextmanager
-    def computing_chunk(self, plan, initial_workspace, start_date, end_date):
+    def computing_chunk(self, terms, start_date, end_date):
         # Set up model on first compute_chunk call.
         if self._model is None:
             self._publisher = self._publisher_factory()
             self._model = ProgressModel(
-                nterms=len(plan),
                 start_date=self._start_date,
                 end_date=self._end_date,
             )
 
-        # Account for terms that were pre-computed by
-        # populate_initial_workspace. We take the intersection of
-        # initial_workspace and plan because AssetExists() and InputDates() are
-        # always in the initial workspace even if they're not needed, and we
-        # don't want to increment progress for those terms if they aren't
-        # actually part of the plan.
-        precomputed = [t for t in initial_workspace if t in plan]
-
         try:
-            self._model.start_chunk(start_date, end_date)
-            if precomputed:
-                self._model.load_precomputed_terms(precomputed)
+            self._model.start_chunk(terms, start_date, end_date)
             self._publish()
             yield
         finally:
-            self._model.finish_chunk(start_date, end_date)
+            self._model.finish_chunk(terms, start_date, end_date)
             self._publish()
 
     @contextmanager
@@ -163,23 +152,35 @@ class ProgressModel(object):
         List of terms currently being loaded or computed.
     """
 
-    def __init__(self, nterms, start_date, end_date):
+    def __init__(self, start_date, end_date):
         self._start_date = start_date
         self._end_date = end_date
 
         # +1 to be inclusive of end_date.
-        total_days = (end_date - start_date).days + 1
-        self._max_progress = total_days * nterms
-
-        self._progress = 0
+        self._total_days = (end_date - start_date).days + 1
+        self._progress = 0.0
         self._days_completed = 0
 
         self._state = 'init'
 
+        # Number of days in current chunk.
         self._current_chunk_size = None
+
+        # (start_date, end_date) of current chunk.
         self._current_chunk_bounds = None
+
+        # How much should we increment progress by after completing a term?
+        self._completed_term_increment = None
+
+        # How much should we increment progress by after completing a chunk?
+        # This is zero unless we compute a pipeline with no terms, in which
+        # case it will be the full chunk percentage.
+        self._completed_chunk_increment = None
+
+        # Terms currently being computed.
         self._current_work = None
 
+        # Tracking state for total elapsed time.
         self._start_time = time.time()
         self._end_time = None
 
@@ -190,7 +191,7 @@ class ProgressModel(object):
 
     @property
     def percent_complete(self):
-        return 100.0 * float(self._progress) / self._max_progress
+        return round(self._progress * 100.0, 3)
 
     @property
     def execution_time(self):
@@ -213,34 +214,42 @@ class ProgressModel(object):
         return self._current_work
 
     # These methods form the interface for ProgressHooks.
-    def start_chunk(self, start_date, end_date):
+    def start_chunk(self, terms, start_date, end_date):
         days_since_start = (end_date - self._start_date).days + 1
         self._current_chunk_size = days_since_start - self._days_completed
         self._current_chunk_bounds = (start_date, end_date)
 
-    def finish_chunk(self, start_date, end_date):
-        self._days_completed += self._current_chunk_size
+        # What percent of our overall progress will happen in this chunk?
+        chunk_percent = float(self._current_chunk_size) / self._total_days
 
-    # There's no begin/end for this because we get all the precomputed terms by
-    # diffing ``initial_workspace`` with ``plan`` in ``computing_chunk``.
-    def load_precomputed_terms(self, terms):
-        self._state = 'loading'
-        self._current_work = terms
-        self._increment_progress(nterms=len(terms))
+        # How much of that is associated with each completed term?
+        nterms = len(terms)
+        if nterms:
+            self._completed_term_increment = chunk_percent / len(terms)
+            self._completed_chunk_increment = 0.0
+        else:
+            # Special case. If we don't have any terms, increment the entire
+            # chunk's worth of progress when we finish the chunk.
+            self._completed_term_increment = 0.0
+            self._completed_chunk_increment = chunk_percent
+
+    def finish_chunk(self, terms, start_date, end_date):
+        self._days_completed += self._current_chunk_size
+        self._progress += self._completed_chunk_increment
 
     def start_load_terms(self, terms):
         self._state = 'loading'
         self._current_work = terms
 
     def finish_load_terms(self, terms):
-        self._increment_progress(nterms=len(terms))
+        self._finish_terms(nterms=len(terms))
 
     def start_compute_term(self, term):
         self._state = 'computing'
         self._current_work = [term]
 
     def finish_compute_term(self, term):
-        self._increment_progress(nterms=1)
+        self._finish_terms(nterms=1)
 
     def finish(self, success):
         self._end_time = time.time()
@@ -249,8 +258,8 @@ class ProgressModel(object):
         else:
             self._state = 'error'
 
-    def _increment_progress(self, nterms):
-        self._progress += nterms * self._current_chunk_size
+    def _finish_terms(self, nterms):
+        self._progress += nterms * self._completed_term_increment
 
 
 try:
