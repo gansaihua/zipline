@@ -5,6 +5,8 @@ from .dataset import Column, DataSet
 
 class Fundamentals(DataSet):
     # broad index membershiop
+    memb_csi50 = Column(float64_dtype, metadata={'blaze_column_name': 'value', 'data_id': 'memb_csi50'})
+    memb_csi50_asof_date = Column(datetime64ns_dtype, metadata={'blaze_column_name': 'asof_date', 'data_id': 'memb_csi50'})
     memb_csi300 = Column(float64_dtype, metadata={'blaze_column_name': 'value', 'data_id': 'memb_csi300'})
     memb_csi300_asof_date = Column(datetime64ns_dtype, metadata={'blaze_column_name': 'asof_date', 'data_id': 'memb_csi300'})
     memb_csi500 = Column(float64_dtype, metadata={'blaze_column_name': 'value', 'data_id': 'memb_csi500'})

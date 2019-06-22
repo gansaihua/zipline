@@ -2,13 +2,13 @@ import os
 import pandas as pd
 from secdb.utils import ensure_list
 from zipline.data.benchmarks_cn import get_benchmark_returns
-from zipline.research.constant import (
+from zipline.utils import paths as pth
+from .constant import (
     DEFAULT_COUNTRY,
     DEFAULT_CALENDAR,
     DEFAULT_DATA_PORTAL,
     DEFAULT_ASSET_FINDER,
 )
-from zipline.utils import paths as pth
 
 
 def symbols(assets,
