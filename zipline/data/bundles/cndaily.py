@@ -7,14 +7,17 @@ from trading_calendars import register_calendar_alias
 from secdb.reader import (
     get_stock_meta,
     get_index_meta,
+    get_futures_meta,
+    get_futures_root_symbols,
+    get_ohlcv,
     get_stock_pricing,
-    get_index_pricing,
+    get_end_session,
 )
 
 
 log = Logger(__name__)
 
-@register('cndaily', calendar_name='XSHG')
+@register('cndaily', calendar_name='XSHG', end_session=get_end_session())
 def cndaily_bundle(environ,
                    asset_db_writer,
                    minute_bar_writer,
@@ -29,10 +32,13 @@ def cndaily_bundle(environ,
 
     stocks = gen_stock_metadata(sids=None)
     indices = gen_index_metadata(sids=None)
-    equities_meta = pd.concat([stocks, indices])
+    futures = gen_futures_metadata(sids=None)
+
+    equities = pd.concat([stocks, indices])
+    assets = pd.concat([equities, futures])
 
     splits = []
-    daily_bar_writer.write(_pricing_iter(equities_meta, calendar, splits),
+    daily_bar_writer.write(_pricing_iter(assets, calendar, splits),
                            show_progress=show_progress)
 
     adjustment_writer.write(
@@ -41,8 +47,10 @@ def cndaily_bundle(environ,
     )
 
     asset_db_writer.write(
-        equities=equities_meta,
+        equities=equities,
+        futures=futures,
         exchanges=gen_exchanges_metadata(),
+        root_symbols=gen_futures_root_symbols(),
     )
 
 
@@ -52,10 +60,12 @@ def gen_stock_metadata(sids=None):
         'Name_': 'asset_name',
         'StartDate': 'start_date',
         'EndDate': 'end_date',
+        'Exchange': 'exchange',
         })
 
-    data['end_date'] = data['end_date'].fillna('2050-1-1')
-    data['exchange'] = 'XSHG'
+    data['end_date'] = data['end_date'].fillna(pd.Timestamp('2050-1-1'))
+    data['exchange'] = data['exchange'].fillna('XSHG')
+    data['auto_close_date'] = data['end_date'].values + pd.Timedelta(days=1)
     return data
 
 
@@ -65,18 +75,53 @@ def gen_index_metadata(sids=None):
         'Name_': 'asset_name',
         'StartDate': 'start_date',
         'EndDate': 'end_date',
+        'Exchange': 'exchange',
         })
 
-    data['end_date'] = data['end_date'].fillna('2050-1-1')
-    data['exchange'] = 'XSHG'
+    data['end_date'] = data['end_date'].fillna(pd.Timestamp('2050-1-1'))
+    data['exchange'] = data['exchange'].fillna('XSHG')
+    data['auto_close_date'] = data['end_date'].values + pd.Timedelta(days=1)
+    return data
+
+
+def gen_futures_metadata(sids=None):
+    data = get_futures_meta(sids).rename(columns={
+        'Symbol': 'symbol',
+        'Name_': 'asset_name',
+        'StartDate': 'start_date',
+        'EndDate': 'end_date',
+        'Exchange': 'exchange',
+        'RootSymbol': 'root_symbol',
+        'NoticeDate': 'notice_date',
+        'TickSize': 'tick_size',
+        'Multiplier': 'multiplier',
+        })
+
+    data['end_date'] = data['end_date'].fillna(pd.Timestamp('2050-1-1'))
+    data['exchange'] = data['exchange'].fillna('XSHG')
+    data['expiration_date'] = data['end_date']
+    data['auto_close_date'] = data['end_date']
+    return data
+
+
+def gen_futures_root_symbols():
+    data = get_futures_root_symbols().rename(columns={
+        'Exchange': 'exchange',
+        'RootSymbol': 'root_symbol',
+        })
+
+    data['root_symbol_id'] = range(100000, len(data)+100000)
+
     return data
 
 
 def gen_exchanges_metadata():
     return pd.DataFrame.from_records([
         {'exchange': 'XSHG', 'country_code': 'CN'},
-        {'exchange': 'SSE', 'country_code': 'CN'},
-        {'exchange': 'SZSE', 'country_code': 'CN'},
+        {'exchange': 'XSHE', 'country_code': 'CN'},
+        {'exchange': 'DCE', 'country_code': 'CN'},
+        {'exchange': 'INE', 'country_code': 'CN'},
+        {'exchange': 'ZCE', 'country_code': 'CN'},
         {'exchange': 'CFFEX', 'country_code': 'CN'},
     ])
 
@@ -93,8 +138,8 @@ def _pricing_iter(equities_meta, calendar, splits):
                 continue
 
             parse_splits(sid, data, splits)
-        elif asset_class == 'index':
-            data = get_index_pricing(sid, fields).rename(columns=lambda x: x.lower()[2:])
+        elif asset_class in ('index', 'futures'):
+            data = get_ohlcv(sid)
             if data.empty:
                 log.info("{} don't have ohlcv".format(sid))
                 continue
@@ -102,7 +147,8 @@ def _pricing_iter(equities_meta, calendar, splits):
             data['open'] = data['open'].fillna(data['close'])
             data['high'] = data['high'].fillna(data['close'])
             data['low'] = data['low'].fillna(data['close'])
-            data['volume'] = data['volume'].fillna(9999)
+            data['volume'] = data['volume'].fillna(0)
+            del data['adj_close']
         else:
             raise Exception('Not supported asset')
 
@@ -131,6 +177,8 @@ def parse_splits(sid, data, out):
     out.append(df)
 
 
-register_calendar_alias("SSE", "XSHG")
-register_calendar_alias("SZSE", "XSHG")
+register_calendar_alias("XSHE", "XSHG")
+register_calendar_alias("DCE", "XSHG")
+register_calendar_alias("INE", "XSHG")
+register_calendar_alias("ZCE", "XSHG")
 register_calendar_alias("CFFEX", "XSHG")

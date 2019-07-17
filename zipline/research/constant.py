@@ -6,7 +6,10 @@ Initialization prerequisites
 '''
 
 import blaze
+import pandas as pd
 from os.path import join
+from zipline.protocol import BarData
+from zipline.finance.asset_restrictions import NoRestrictions
 from zipline.utils.paths import data_path, ensure_directory
 from zipline.data.bundles import load
 from zipline.data.data_portal import DataPortal
@@ -49,12 +52,12 @@ ensure_directory(fundamentals_root)
 
 
 def choose_loader(column):
-    column_general = column.unspecialize()
-    if column_general in EquityPricing.columns:
+    column_generic = column.unspecialize()
+    if column_generic in EquityPricing.columns:
         return pricing_loader
-    elif column_general in EquityMetrics.columns:
+    elif column_generic in EquityMetrics.columns:
         return metrics_loader
-    elif column_general in Fundamentals.columns:
+    elif column_generic in Fundamentals.columns:
         data_id = column.metadata['data_id']
         pth = join(fundamentals_root, '{}.bcolz'.format(data_id))
         try:
@@ -71,6 +74,16 @@ DEFAULT_PIPELINE_ENGINE = SimplePipelineEngine(
     DEFAULT_ASSET_FINDER,
 )
 
+
+def create_bardata(dt):
+    return BarData(
+        DEFAULT_DATA_PORTAL,
+        lambda: pd.Timestamp(dt, tz='utc'),
+        'daily',
+        DEFAULT_CALENDAR,
+        NoRestrictions()
+    )
+
 __all__ = [
     'DEFAULT_COUNTRY',
     'DEFAULT_BUNDLE_DATA',
@@ -78,4 +91,5 @@ __all__ = [
     'DEFAULT_ASSET_FINDER',
     'DEFAULT_DATA_PORTAL',
     'DEFAULT_PIPELINE_ENGINE',
+    'create_bardata',
 ]

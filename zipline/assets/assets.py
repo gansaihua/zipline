@@ -244,7 +244,10 @@ def _encode_continuous_future_sid(root_symbol,
                                   offset,
                                   roll_style,
                                   adjustment_style):
-    s = struct.Struct("B 2B B B B 2B")
+    if len(root_symbol) == 1:
+        s = struct.Struct("B B B B B 2B")
+    elif len(root_symbol) == 2:
+        s = struct.Struct("B 2B B B B 2B")
     # B - sid type
     # 2B - root symbol
     # B - offset (could be packed smaller since offsets of greater than 12 are
@@ -257,18 +260,25 @@ def _encode_continuous_future_sid(root_symbol,
     # are needed, the size of the root symbol does not need to change, however
     # writing the string directly will need to change to a scheme of writing
     # the A-Z values in 5-bit chunks.
-    if len(root_symbol) == 1:
-        root_symbol *= 2
-
     a = array.array('B', [0] * s.size)
     rs = bytearray(root_symbol, 'ascii')
-    values = (SID_TYPE_IDS[ContinuousFuture],
-              rs[0],
-              rs[1],
-              offset,
-              CONTINUOUS_FUTURE_ROLL_STYLE_IDS[roll_style],
-              CONTINUOUS_FUTURE_ADJUSTMENT_STYLE_IDS[adjustment_style],
-              0, 0)
+
+    if len(root_symbol) == 1:
+        values = (SID_TYPE_IDS[ContinuousFuture],
+                  rs[0],
+                  offset,
+                  CONTINUOUS_FUTURE_ROLL_STYLE_IDS[roll_style],
+                  CONTINUOUS_FUTURE_ADJUSTMENT_STYLE_IDS[adjustment_style],
+                  0, 0)
+    elif len(root_symbol) == 2:
+        values = (SID_TYPE_IDS[ContinuousFuture],
+                  rs[0],
+                  rs[1],
+                  offset,
+                  CONTINUOUS_FUTURE_ROLL_STYLE_IDS[roll_style],
+                  CONTINUOUS_FUTURE_ADJUSTMENT_STYLE_IDS[adjustment_style],
+                  0, 0)
+
     s.pack_into(a, 0, *values)
     return int(binascii.hexlify(a), 16)
 

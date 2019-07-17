@@ -8,6 +8,7 @@ from .constant import (
     DEFAULT_CALENDAR,
     DEFAULT_DATA_PORTAL,
     DEFAULT_ASSET_FINDER,
+    create_bardata,
 )
 
 
@@ -206,6 +207,9 @@ def log_returns(assets,
 def get_contract(root_symbols, dt):
     cf = symbols(root_symbols)
     dt = pd.Timestamp(dt, tz='utc')
+    # bar_data = create_bardata(dt)
+    # return bar_data.current(cf, 'contract')
+
     data_portal = DEFAULT_DATA_PORTAL
 
     return data_portal.get_spot_value(

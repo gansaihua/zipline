@@ -51,13 +51,13 @@ from ._equities import _compute_row_slices, _read_bcolz_data
 logger = logbook.Logger('EquityDailyMetrics')
 
 METRICS = frozenset([
-    'open', 'high', 'low', 'close', 'avg_price', 'turnover', 'factor','pe', 'pb', 'pcf', 'ps',
+    'open', 'high', 'low', 'close', 'vwap', 'turnover', 'factor','pe', 'pb', 'pcf', 'ps',
 ])
 METRICS_WITHOUT_RESCALE = frozenset([
     'volume','amount', 'shares_tot', 'shares_liq', 'mkt_cap_tot', 'mkt_cap_liq'
 ])
 US_EQUITY_PRICING_BCOLZ_COLUMNS = (
-    'open', 'high', 'low', 'close', 'volume', 'avg_price', 'turnover',
+    'open', 'high', 'low', 'close', 'volume', 'vwap', 'turnover',
     'amount', 'factor', 'pe', 'pb', 'pcf', 'ps',
     'shares_tot', 'shares_liq', 'mkt_cap_tot', 'mkt_cap_liq', 'day', 'id'
 )

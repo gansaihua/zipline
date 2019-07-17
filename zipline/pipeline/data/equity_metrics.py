@@ -10,7 +10,7 @@ class EquityMetrics(DataSet):
     close = Column(float64_dtype)
     volume = Column(float64_dtype)
     amount = Column(float64_dtype)
-    avg_price = Column(float64_dtype)
+    vwap = Column(float64_dtype)
     turnover = Column(float64_dtype)
     factor = Column(float64_dtype)
     pe = Column(float64_dtype)
