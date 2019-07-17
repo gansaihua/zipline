@@ -34,6 +34,7 @@ from zipline.lib.adjustment import (
 from zipline.lib.adjusted_array import AdjustedArray
 from zipline.lib.labelarray import LabelArray
 from zipline.testing import check_arrays
+from zipline.testing.predicates import assert_equal
 from zipline.utils.compat import unicode
 from zipline.utils.numpy_utils import (
     coerce_to_dtype,
@@ -498,6 +499,50 @@ def _gen_expectations(baseline,
 
 
 class AdjustedArrayTestCase(TestCase):
+    def test_traverse_invalidating(self):
+        data = arange(5 * 3, dtype='f8').reshape(5, 3)
+        original_data = data.copy()
+        adjustments = {2: [Float64Multiply(0, 4, 0, 2, 2.0)]}
+        adjusted_array = AdjustedArray(data, adjustments, float('nan'))
+
+        for _ in adjusted_array.traverse(1, copy=False):
+            pass
+
+        assert_equal(data, original_data * 2)
+
+        with self.assertRaises(ValueError) as e:
+            adjusted_array.traverse(1)
+
+        assert_equal(
+            str(e.exception),
+            'cannot traverse invalidated AdjustedArray',
+        )
+
+    def test_copy(self):
+        data = arange(5 * 3, dtype='f8').reshape(5, 3)
+        original_data = data.copy()
+        adjustments = {2: [Float64Multiply(0, 4, 0, 2, 2.0)]}
+        adjusted_array = AdjustedArray(data, adjustments, float('nan'))
+        traverse_copy = adjusted_array.copy()
+        clean_copy = adjusted_array.copy()
+
+        a_it = adjusted_array.traverse(2, copy=False)
+        b_it = traverse_copy.traverse(2, copy=False)
+        for a, b in zip(a_it, b_it):
+            assert_equal(a, b)
+
+        with self.assertRaises(ValueError) as e:
+            adjusted_array.copy()
+
+        assert_equal(
+            str(e.exception),
+            'cannot copy invalidated AdjustedArray',
+        )
+
+        # the clean copy should have the original data even though the
+        # original adjusted array has it's data mutated in place
+        assert_equal(clean_copy.data, original_data)
+        assert_equal(adjusted_array.data, original_data * 2)
 
     @parameterized.expand(
         chain(

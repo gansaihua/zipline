@@ -59,7 +59,7 @@ from abc import ABCMeta, abstractmethod
 from functools import partial
 
 from six import iteritems, with_metaclass, viewkeys
-from numpy import array
+from numpy import array, arange
 from pandas import DataFrame, MultiIndex
 from toolz import groupby
 
@@ -107,7 +107,7 @@ class PipelineEngine(with_metaclass(ABCMeta)):
 
             The ``result`` columns correspond to the entries of
             `pipeline.columns`, which should be a dictionary mapping strings to
-            instances of :class:`zipline.pipeline.term.Term`.
+            instances of :class:`zipline.pipeline.Term`.
 
             For each date between ``start_date`` and ``end_date``, ``result``
             will contain a row for each asset that passed `pipeline.screen`.
@@ -150,7 +150,7 @@ class PipelineEngine(with_metaclass(ABCMeta)):
 
             The ``result`` columns correspond to the entries of
             `pipeline.columns`, which should be a dictionary mapping strings to
-            instances of :class:`zipline.pipeline.term.Term`.
+            instances of :class:`zipline.pipeline.Term`.
 
             For each date between ``start_date`` and ``end_date``, ``result``
             will contain a row for each asset that passed `pipeline.screen`.
@@ -319,7 +319,7 @@ class SimplePipelineEngine(PipelineEngine):
 
             The ``result`` columns correspond to the entries of
             `pipeline.columns`, which should be a dictionary mapping strings to
-            instances of :class:`zipline.pipeline.term.Term`.
+            instances of :class:`zipline.pipeline.Term`.
 
             For each date between ``start_date`` and ``end_date``, ``result``
             will contain a row for each asset that passed `pipeline.screen`.
@@ -372,7 +372,7 @@ class SimplePipelineEngine(PipelineEngine):
 
             The ``result`` columns correspond to the entries of
             `pipeline.columns`, which should be a dictionary mapping strings to
-            instances of :class:`zipline.pipeline.term.Term`.
+            instances of :class:`zipline.pipeline.Term`.
 
             For each date between ``start_date`` and ``end_date``, ``result``
             will contain a row for each asset that passed `pipeline.screen`.
@@ -532,7 +532,7 @@ class SimplePipelineEngine(PipelineEngine):
         return ret
 
     @staticmethod
-    def _inputs_for_term(term, workspace, graph, domain):
+    def _inputs_for_term(term, workspace, graph, domain, refcounts):
         """
         Compute inputs for the given term.
 
@@ -559,6 +559,12 @@ class SimplePipelineEngine(PipelineEngine):
                     adjusted_array.traverse(
                         window_length=term.window_length,
                         offset=offsets[term, input_],
+                        # If the refcount for the input is > 1, we will need
+                        # to traverse this array again so we must copy.
+                        # If the refcount for the input == 0, this is the last
+                        # traversal that will happen so we can invalidate
+                        # the AdjustedArray and mutate the data in place.
+                        copy=refcounts[input_] > 1,
                     )
                 )
         else:
@@ -690,7 +696,13 @@ class SimplePipelineEngine(PipelineEngine):
             else:
                 with hooks.computing_term(term):
                     workspace[term] = term._compute(
-                        self._inputs_for_term(term, workspace, graph, domain),
+                        self._inputs_for_term(
+                            term,
+                            workspace,
+                            graph,
+                            domain,
+                            refcounts,
+                        ),
                         mask_dates,
                         sids,
                         mask,
@@ -761,10 +773,6 @@ class SimplePipelineEngine(PipelineEngine):
                 index=MultiIndex.from_arrays([empty_dates, empty_assets]),
             )
 
-        resolved_assets = array(self._finder.retrieve_all(assets))
-        dates_kept = repeat_last_axis(dates.values, len(assets))[mask]
-        assets_kept = repeat_first_axis(resolved_assets, len(dates))[mask]
-
         final_columns = {}
         for name in data:
             # Each term that computed an output has its postprocess method
@@ -774,10 +782,10 @@ class SimplePipelineEngine(PipelineEngine):
             # LabelArrays into categoricals.
             final_columns[name] = terms[name].postprocess(data[name][mask])
 
-        return DataFrame(
-            data=final_columns,
-            index=MultiIndex.from_arrays([dates_kept, assets_kept]),
-        ).tz_localize('UTC', level=0)
+        resolved_assets = array(self._finder.retrieve_all(assets))
+        index = _pipeline_output_index(dates, resolved_assets, mask)
+
+        return DataFrame(data=final_columns, index=index)
 
     def _validate_compute_chunk_params(self,
                                        graph,
@@ -881,3 +889,34 @@ class SimplePipelineEngine(PipelineEngine):
         if hooks is None:
             hooks = []
         return DelegatingHooks(self._default_hooks + hooks)
+
+
+def _pipeline_output_index(dates, assets, mask):
+    """
+    Create a MultiIndex for a pipeline output.
+
+    Parameters
+    ----------
+    dates : pd.DatetimeIndex
+        Row labels for ``mask``.
+    assets : pd.Index
+        Column labels for ``mask``.
+    mask : np.ndarray[bool]
+        Mask array indicating date/asset pairs that should be included in
+        output index.
+
+    Returns
+    -------
+    index : pd.MultiIndex
+        MultiIndex  containing (date,  asset) pairs  corresponding to  ``True``
+        values in ``mask``.
+    """
+    date_labels = repeat_last_axis(arange(len(dates)), len(assets))[mask]
+    asset_labels = repeat_first_axis(arange(len(assets)), len(dates))[mask]
+    return MultiIndex(
+        levels=[dates, assets],
+        labels=[date_labels, asset_labels],
+        # TODO: We should probably add names for these.
+        names=[None, None],
+        verify_integrity=False,
+    )
