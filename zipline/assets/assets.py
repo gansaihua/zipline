@@ -57,10 +57,10 @@ from . import (
 )
 from . continuous_futures import (
     ADJUSTMENT_STYLES,
-    CHAIN_PREDICATES,
     ContinuousFuture,
     OrderedContracts,
 )
+from .chain_predicates import CHAIN_PREDICATES
 from .asset_writer import (
     check_version_info,
     split_delimited_symbol,

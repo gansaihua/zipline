@@ -16,22 +16,24 @@ def symbols(assets,
             symbol_reference_date=None,
             country=None,
             handle_missing='raise',
+            offset=0,
+            roll_style='volume',
             adjustment=None):
     """
     Convert a or a list of str and int into a list of Asset objects.
-    
-    Parameters:	
+
+    Parameters:
         symbols_ (str, int or iterable of str and int)
-            Passed strings are interpreted as ticker symbols and 
+            Passed strings are interpreted as ticker symbols and
             resolveXSHGd relative to the date specified by symbol_reference_date.
         symbol_reference_date (str or pd.Timestamp, optional)
-            String or Timestamp representing a date used to resolve symbols 
+            String or Timestamp representing a date used to resolve symbols
             that have been held by multiple companies. Defaults to the current time.
         handle_missing ({'raise', 'log', 'ignore'}, optional)
             String specifying how to handle unmatched securities. Defaults to ‘log’.
         adjustment ({'mul', 'add', None}, optional)
             String specifying how to adjust futures prices
-    Returns:	
+    Returns:
 
     list of Asset objects – The symbols that were requested.
     """
@@ -52,7 +54,7 @@ def symbols(assets,
     for s in ensure_list(missing):
         try:
             ret.append(finder.create_continuous_future(
-                s, 0, 'volume', adjustment))
+                s, offset, roll_style, adjustment))
         except:
             pass
 
@@ -225,6 +227,8 @@ def get_pricing(assets,
                 fields=None,
                 handle_missing='raise',
                 start_offset=0,
+                offset=0,
+                roll_style='volume',
                 adjustment=None):
     '''
     Load a table of historical trade data.
@@ -260,10 +264,12 @@ def get_pricing(assets,
     If both parameters are passed as strings, data is returned as a Series.
     '''
     assets = symbols(assets,
-                     symbol_reference_date,
-                     DEFAULT_COUNTRY,
-                     handle_missing,
-                     adjustment)
+                     symbol_reference_date=symbol_reference_date,
+                     country=DEFAULT_COUNTRY,
+                     handle_missing=handle_missing,
+                     offset=offset,
+                     roll_style=roll_style,
+                     adjustment=adjustment)
 
     if fields is None:
         fields = ['open', 'high', 'low', 'close', 'volume']

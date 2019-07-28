@@ -30,8 +30,8 @@ def cndaily_bundle(environ,
                    show_progress,
                    output_dir):
 
-    stocks = gen_stock_metadata(sids=None)
-    indices = gen_index_metadata(sids=None)
+    stocks = gen_stock_metadata(sids=[])
+    indices = gen_index_metadata(sids=[])
     futures = gen_futures_metadata(sids=None)
 
     equities = pd.concat([stocks, indices])
@@ -123,6 +123,7 @@ def gen_exchanges_metadata():
         {'exchange': 'INE', 'country_code': 'CN'},
         {'exchange': 'ZCE', 'country_code': 'CN'},
         {'exchange': 'CFFEX', 'country_code': 'CN'},
+        {'exchange': 'SHFE', 'country_code': 'CN'},
     ])
 
 
@@ -130,12 +131,16 @@ def _pricing_iter(equities_meta, calendar, splits):
     fields = ['P_OPEN', 'P_HIGH', 'P_LOW', 'P_CLOSE', 'P_VOLUME']
 
     for sid, row in equities_meta.iterrows():
+        print(sid)
         asset_class = row['Asset']
         if asset_class == 'equity':
             data = get_stock_pricing(sid, fields+['P_FACTOR']).rename(columns=lambda x: x.lower()[2:])
             if data.empty:
                 log.info("{} don't have ohlcv".format(sid))
                 continue
+
+            data['volume'] = data['volume'].fillna(0)
+            data = data.fillna(method='ffill')
 
             parse_splits(sid, data, splits)
         elif asset_class in ('index', 'futures'):
@@ -147,17 +152,14 @@ def _pricing_iter(equities_meta, calendar, splits):
             data['open'] = data['open'].fillna(data['close'])
             data['high'] = data['high'].fillna(data['close'])
             data['low'] = data['low'].fillna(data['close'])
-            data['volume'] = data['volume'].fillna(0)
-            del data['adj_close']
         else:
             raise Exception('Not supported asset')
 
         sessions = calendar.sessions_in_range(data.index[0], data.index[-1])
-        data = data.reindex(sessions.tz_localize(None))
+        data = data.reindex(sessions.tz_localize(None), method='ffill')
 
-        data['volume'] = data['volume'].fillna(0)
-        mask = data['volume'] == 0
-        data.loc[mask, ['open', 'high', 'low', 'close']] = 0
+        # mask = data['volume'] == 0
+        # data.loc[mask, ['open', 'high', 'low', 'close']] = 0
 
         limit = np.iinfo(np.uint32).max
         mask = data['volume'] > limit
@@ -182,3 +184,4 @@ register_calendar_alias("DCE", "XSHG")
 register_calendar_alias("INE", "XSHG")
 register_calendar_alias("ZCE", "XSHG")
 register_calendar_alias("CFFEX", "XSHG")
+register_calendar_alias("SHFE", "XSHG")
