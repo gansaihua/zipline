@@ -12,6 +12,7 @@ from numpy import (
     NINF,
     sqrt,
     sum as np_sum,
+    unique,
 )
 
 from zipline.pipeline.data import EquityPricing
@@ -26,6 +27,7 @@ from zipline.utils.math_utils import (
 from zipline.utils.numpy_utils import (
     float64_dtype,
     ignore_nanwarnings,
+    int64_dtype,
 )
 
 from .factor import CustomFactor
@@ -54,6 +56,34 @@ class Returns(CustomFactor):
         out[:] = (close[-1] - close[0]) / close[0]
 
 
+class PercentChange(SingleInputMixin, CustomFactor):
+    """
+    Calculates the percent change over the given window_length.
+
+    **Default Inputs:** None
+
+    **Default Window Length:** None
+
+    Notes
+    -----
+    Percent change is calculated as ``(new - old) / abs(old)``.
+    """
+    window_safe = True
+
+    def _validate(self):
+        super(PercentChange, self)._validate()
+        if self.window_length < 2:
+            raise ValueError(
+                "'PercentChange' expected a window length"
+                "of at least 2, but was given {window_length}. "
+                "For daily percent change, use a window "
+                "length of 2.".format(window_length=self.window_length)
+            )
+
+    def compute(self, today, assets, out, values):
+        out[:] = (values[-1] - values[0]) / abs(values[0])
+
+
 class DailyReturns(Returns):
     """
     Calculates daily percent change in close price.
@@ -65,7 +95,7 @@ class DailyReturns(Returns):
     window_length = 2
 
 
-class SimpleMovingAverage(CustomFactor, SingleInputMixin):
+class SimpleMovingAverage(SingleInputMixin, CustomFactor):
     """
     Average Value of an arbitrary column
 
@@ -105,7 +135,7 @@ class VWAP(WeightedAverageValue):
     inputs = (EquityPricing.close, EquityPricing.volume)
 
 
-class MaxDrawdown(CustomFactor, SingleInputMixin):
+class MaxDrawdown(SingleInputMixin, CustomFactor):
     """
     Max Drawdown
 
@@ -410,7 +440,7 @@ class ExponentialWeightedMovingStdDev(_ExponentialWeightedFactor):
         out[:] = sqrt(variance * bias_correction)
 
 
-class LinearWeightedMovingAverage(CustomFactor, SingleInputMixin):
+class LinearWeightedMovingAverage(SingleInputMixin, CustomFactor):
     """
     Weighted Average Value of an arbitrary column
 
@@ -459,6 +489,38 @@ class AnnualizedVolatility(CustomFactor):
 
     def compute(self, today, assets, out, returns, annualization_factor):
         out[:] = nanstd(returns, axis=0) * (annualization_factor ** .5)
+
+
+class PeerCount(SingleInputMixin, CustomFactor):
+    """
+    Peer Count of distinct categories in a given classifier.  This factor
+    is returned by the classifier instance method peer_count()
+
+    **Default Inputs:** None
+
+    **Default Window Length:** 1
+    """
+    window_length = 1
+    missing_value = -1
+    dtype = int64_dtype
+
+    def _validate(self):
+        super(PeerCount, self)._validate()
+        if self.window_length != 1:
+            raise ValueError(
+                "'PeerCount' expected a window length of 1, but was given"
+                "{window_length}.".format(window_length=self.window_length)
+            )
+
+    def compute(self, today, assets, out, classifier_values):
+        # Convert classifier array to group label int array
+        group_labels, _ = self.inputs[0]._to_integral(classifier_values[0])
+        _, inverse, counts = unique(  # Get counts, idx of unique groups
+            group_labels,
+            return_counts=True,
+            return_inverse=True,
+        )
+        out[:] = counts[inverse]
 
 
 # Convenience aliases
