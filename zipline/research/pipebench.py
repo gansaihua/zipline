@@ -32,10 +32,10 @@ def run_pipeline(pipeline, start_date, end_date):
 
     end_date = pd.Timestamp(end_date, tz='utc')
     if not calendar.is_session(end_date):
-        # this is not a trading session, advance to the previous session
+        # this is not a trading session, advance to the next session
         end_date = calendar.minute_to_session_label(
             end_date,
-            direction='previous',
+            direction='next',
         )
 
     return engine.run_pipeline(pipeline, start_date, end_date)

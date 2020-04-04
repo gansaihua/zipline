@@ -30,8 +30,8 @@ def cndaily_bundle(environ,
                    show_progress,
                    output_dir):
 
-    stocks = gen_stock_metadata(sids=[])
-    indices = gen_index_metadata(sids=[])
+    stocks = gen_stock_metadata(sids=None)
+    indices = gen_index_metadata(sids=None)
     futures = gen_futures_metadata(sids=None)
 
     equities = pd.concat([stocks, indices])
@@ -64,7 +64,6 @@ def gen_stock_metadata(sids=None):
         })
 
     data['end_date'] = data['end_date'].fillna(pd.Timestamp('2050-1-1'))
-    data['exchange'] = data['exchange'].fillna('XSHG')
     data['auto_close_date'] = data['end_date'].values + pd.Timedelta(days=1)
     return data
 
@@ -131,7 +130,6 @@ def _pricing_iter(equities_meta, calendar, splits):
     fields = ['P_OPEN', 'P_HIGH', 'P_LOW', 'P_CLOSE', 'P_VOLUME']
 
     for sid, row in equities_meta.iterrows():
-        print(sid)
         asset_class = row['Asset']
         if asset_class == 'equity':
             data = get_stock_pricing(sid, fields+['P_FACTOR']).rename(columns=lambda x: x.lower()[2:])
