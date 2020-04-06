@@ -27,7 +27,7 @@ import logbook
 import numpy as np
 import pandas as pd
 from pandas import HDFStore
-import tables
+# import tables
 from six import with_metaclass
 from toolz import keymap, valmap
 from trading_calendars import get_calendar
@@ -1145,7 +1145,7 @@ class BcolzMinuteBarReader(MinuteBarReader):
             else:
                 return np.nan
 
-        if field != 'volume':
+        if field not in ('volume', 'open_interest'):
             value *= self._ohlc_ratio_inverse_for_sid(sid)
         return value
 
@@ -1265,7 +1265,7 @@ class BcolzMinuteBarReader(MinuteBarReader):
         shape = num_minutes, len(sids)
 
         for field in fields:
-            if field != 'volume':
+            if field not in ('volume', 'open_interest'):
                 out = np.full(shape, np.nan)
             else:
                 out = np.zeros(shape, dtype=np.uint32)
@@ -1282,7 +1282,7 @@ class BcolzMinuteBarReader(MinuteBarReader):
                 where = values != 0
                 # first slice down to len(where) because we might not have
                 # written data for all the minutes requested
-                if field != 'volume':
+                if field not in ('volume', 'open_interest'):
                     out[:len(where), i][where] = (
                         values[where] * self._ohlc_ratio_inverse_for_sid(sid))
                 else:
@@ -1373,6 +1373,7 @@ class H5MinuteBarUpdateReader(MinuteBarUpdateReader):
     path : str
         The path of the HDF5 file from which to source data.
     """
+
     def __init__(self, path):
         try:
             self._panel = pd.read_hdf(path)

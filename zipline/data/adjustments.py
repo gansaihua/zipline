@@ -201,7 +201,7 @@ class SQLiteAdjustmentReader(object):
         volume_adjustments = adjustments.get('volume')
 
         return [
-            volume_adjustments if column == 'volume'
+            volume_adjustments if column in ('volume', 'open_interest')
             else price_adjustments
             for column in columns
         ]

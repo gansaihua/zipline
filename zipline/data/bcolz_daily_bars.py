@@ -54,6 +54,7 @@ OHLC = frozenset(['open', 'high', 'low', 'close'])
 US_EQUITY_PRICING_BCOLZ_COLUMNS = (
     'open', 'high', 'low', 'close', 'volume', 'day', 'id'
 )
+FUTURES_PRICING_BCOLZ_COLUMNS = US_EQUITY_PRICING_BCOLZ_COLUMNS + ('open_interest',)
 
 UINT32_MAX = iinfo(np.uint32).max
 
@@ -250,7 +251,7 @@ class BcolzDailyBarWriter(object):
         # Maps column name -> output carray.
         columns = {
             k: carray(array([], dtype=uint32_dtype))
-            for k in US_EQUITY_PRICING_BCOLZ_COLUMNS
+            for k in FUTURES_PRICING_BCOLZ_COLUMNS
         }
 
         earliest_date = None
@@ -338,9 +339,9 @@ class BcolzDailyBarWriter(object):
         full_table = ctable(
             columns=[
                 columns[colname]
-                for colname in US_EQUITY_PRICING_BCOLZ_COLUMNS
+                for colname in FUTURES_PRICING_BCOLZ_COLUMNS
             ],
-            names=US_EQUITY_PRICING_BCOLZ_COLUMNS,
+            names=FUTURES_PRICING_BCOLZ_COLUMNS,
             rootdir=self._filename,
             mode='w',
         )
@@ -370,6 +371,7 @@ class BcolzDailyBarWriter(object):
         check_uint32_safe(dates.max().view(np.int64), 'day')
         processed['day'] = dates.astype('uint32')
         processed['volume'] = raw_data.volume.astype('uint32')
+        processed['open_interest'] = raw_data.open_interest.astype('uint32')
         return ctable.fromdataframe(processed)
 
 
@@ -697,7 +699,7 @@ class BcolzDailyBarReader(CurrencyAwareSessionBarReader):
         """
         ix = self.sid_day_index(sid, dt)
         price = self._spot_col(field)[ix]
-        if field != 'volume':
+        if field not in ('volume', 'open_interest'):
             if price == 0:
                 return nan
             else:

@@ -548,7 +548,7 @@ class MinuteResampleSessionBarReader(SessionBarReader):
         shape = (len(close_ilocs), len(assets))
 
         for col in columns:
-            if col != 'volume':
+            if col not in ('volume', 'open_interest'):
                 out = np.full(shape, np.nan)
             else:
                 out = np.zeros(shape, dtype=np.uint32)
@@ -695,7 +695,7 @@ class ReindexBarReader(with_metaclass(ABCMeta)):
             inner_results = None
 
         for i, field in enumerate(fields):
-            if field != 'volume':
+            if field not in ('volume', 'open_interest'):
                 out = np.full(shape, np.nan)
             else:
                 out = np.zeros(shape, dtype=np.uint32)

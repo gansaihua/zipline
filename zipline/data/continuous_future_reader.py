@@ -75,7 +75,7 @@ class ContinuousFutureSessionBarReader(SessionBarReader):
                     start = sessions[end_loc + 1]
 
         for column in columns:
-            if column != 'volume' and column != 'sid':
+            if column not in ('volume', 'open_interest', 'sid'):
                 out = np.full(shape, np.nan)
             else:
                 out = np.zeros(shape, dtype=np.int64)
@@ -265,7 +265,7 @@ class ContinuousFutureMinuteBarReader(SessionBarReader):
                         tc.minute_to_session_label(minutes[end_loc + 1]))
 
         for column in columns:
-            if column != 'volume':
+            if column not in ('volume', 'open_interest'):
                 out = np.full(shape, np.nan)
             else:
                 out = np.zeros(shape, dtype=np.uint32)

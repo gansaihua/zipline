@@ -78,3 +78,8 @@ TAGS
 .gdb_history
 
 *.dSYM/
+
+venv/
+*.pyd
+
+_engine.py

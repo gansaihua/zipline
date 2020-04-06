@@ -87,6 +87,9 @@ OHLCV_FIELDS = frozenset([
 OHLCVP_FIELDS = frozenset([
     "open", "high", "low", "close", "volume", "price"
 ])
+ALLOWED_FIELDS = frozenset([
+    "open", "high", "low", "close", "volume", "price", 'open_interest'
+])
 
 HISTORY_FREQUENCIES = set(["1m", "1d"])
 
@@ -600,7 +603,7 @@ class DataPortal(object):
         adjustment_ratios_per_asset = []
 
         def split_adj_factor(x):
-            return x if field != 'volume' else 1.0 / x
+            return x if field not in ('volume', 'open_interest') else 1.0 / x
 
         for asset in assets:
             adjustments_for_asset = []
@@ -613,7 +616,7 @@ class DataPortal(object):
                 elif adj_dt > perspective_dt:
                     break
 
-            if field != 'volume':
+            if field not in ('volume', 'open_interest'):
                 merger_adjustments = self._get_adjustment_list(
                     asset, self._mergers_dict, "MERGERS"
                 )
@@ -695,7 +698,7 @@ class DataPortal(object):
             try:
                 return reader.get_value(asset.sid, dt, column)
             except NoDataOnDate:
-                if column != 'volume':
+                if column not in ('volume', 'open_interest'):
                     return np.nan
                 else:
                     return 0
@@ -950,7 +953,7 @@ class DataPortal(object):
         -------
         A dataframe containing the requested data.
         """
-        if field not in OHLCVP_FIELDS and field != 'sid':
+        if field not in ALLOWED_FIELDS and field != 'sid':
             raise ValueError("Invalid field: {0}".format(field))
 
         if bar_count < 1:

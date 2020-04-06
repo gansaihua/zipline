@@ -95,7 +95,7 @@ class HistoryCompatibleUSEquityAdjustmentReader(object):
         start = normalize_date(dts[0])
         end = normalize_date(dts[-1])
         adjs = {}
-        if field != 'volume':
+        if field not in ('volume', 'open_interest'):
             mergers = self._adjustments_reader.get_adjustments_for_sid(
                 'mergers', sid)
             for m in mergers:
@@ -306,7 +306,7 @@ class HistoryLoader(with_metaclass(ABCMeta)):
     adjustment_reader : SQLiteAdjustmentReader
         Reader for adjustment data.
     """
-    FIELDS = ('open', 'high', 'low', 'close', 'volume', 'sid')
+    FIELDS = ('open', 'high', 'low', 'close', 'volume', 'sid') + ('open_interest',)
 
     def __init__(self, trading_calendar, reader, equity_adjustment_reader,
                  asset_finder,
@@ -436,7 +436,7 @@ class HistoryLoader(with_metaclass(ABCMeta)):
                 window_type = Float64Window
 
             view_kwargs = {}
-            if field == 'volume':
+            if field in ('volume', 'open_interest'):
                 array = array.astype(float64_dtype)
 
             for i, asset in enumerate(needed_assets):

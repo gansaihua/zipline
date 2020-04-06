@@ -18,7 +18,8 @@ toolz>=0.8.2
 
 # Scientific Libraries
 numpy>=1.11.3
-pandas>=0.18.1,<=0.22
+# pandas>=0.18.1,<=0.22
+pandas
 pandas-datareader>=0.2.1
 scipy>=0.17.1
 # Needed for parts of pandas.stats
@@ -43,10 +44,11 @@ sqlalchemy>=1.0.8
 alembic>=0.7.7
 
 # On disk storage format for pipeline data.
-bcolz>=0.12.1,<1
+# bcolz>=0.12.1,<1
+bcolz
 # On disk storage format for pricing data.
 h5py>=2.7.1
-tables>=3.4.3
+# tables>=3.4.3
 
 # Performance
 lru-dict>=1.1.4
