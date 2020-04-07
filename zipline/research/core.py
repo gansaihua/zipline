@@ -71,11 +71,12 @@ def prices(assets,
            frequency='daily',
            price_field='price',
            symbol_reference_date=None,
-           start_offset=0):
+           start_offset=0,
+           join='inner'):
     """
-    Parameters: 
+    Parameters:
         assets (int/str/Asset or iterable of same)
-            Identifiers for assets to load. Integers are interpreted as sids. 
+            Identifiers for assets to load. Integers are interpreted as sids.
             Strings are interpreted as symbols.
         start (str or pd.Timestamp)
             Start date of data to load.
@@ -84,12 +85,12 @@ def prices(assets,
         frequency ({'minute', 'daily'}, optional)
             Frequency at which to load data. Default is ‘daily’.
         price_field ({'open', 'high', 'low', 'close', 'price'}, optional)
-            Price field to load. ‘price’ produces the same data as ‘close’, 
+            Price field to load. ‘price’ produces the same data as ‘close’,
             but forward-fills over missing data. Default is ‘price’.
         symbol_reference_date (pd.Timestamp, optional)
             Date as of which to resolve strings as tickers. Default is the current day.
         start_offset (int, optional)
-            Number of periods before start to fetch. Default is 0. 
+            Number of periods before start to fetch. Default is 0.
             This is most often useful for calculating returns.
     Data is returned as a pd.Series if a single asset is passed.
     Data is returned as a pd.DataFrame if multiple assets are passed.
@@ -105,6 +106,9 @@ def prices(assets,
             direction='next',
         )
 
+    if start_offset:
+        start -= start_offset * calendar.day
+
     end = pd.Timestamp(end, tz='utc')
     if not calendar.is_session(end):
         # this is not a trading session, advance to the previous session
@@ -113,16 +117,18 @@ def prices(assets,
             direction='previous',
         )
 
-    if start_offset:
-        start -= start_offset * calendar.day
-
-    dates = calendar.all_sessions
-    bar_count = dates.get_loc(end) - dates.get_loc(start) + 1
-
     assets = symbols(assets, symbol_reference_date=symbol_reference_date)
 
+    if join == 'inner':
+        for asset in assets:
+            if asset.start_date > start:
+                start = asset.start_date
+            if asset.end_date < end:
+                end = asset.end_date
+
+    dates = calendar.sessions_in_range(start, end)
     df = data_portal.get_history_window(
-        assets, end, bar_count, '1d', price_field, frequency
+        assets, end, len(dates), '1d', price_field, frequency
     )
 
     if len(assets) > 1:
@@ -204,7 +210,7 @@ def get_pricing(assets,
         if n_assets > 1:
             return pd.Panel(d)
         else:
-            return pd.DataFrame(d)
+            return pd.DataFrame(d, columns=fields)
     else:
         return prices(
             assets,
@@ -215,3 +221,42 @@ def get_pricing(assets,
             symbol_reference_date,
             start_offset,
         )
+
+
+def get_contract(root_symbol, dt):
+    """
+    root_symbol: ContinuousFutures
+    dt: str / pd.Timestamp
+    Return: `Asset`
+    """
+    data_portal = DEFAULT_DATA_PORTAL
+    dt = pd.Timestamp(dt, tz='utc')
+    return data_portal._get_current_contract(root_symbol, dt)
+
+
+def get_futures_chain(root_symbol, dt):
+    """
+    root_symbol: ContinuousFutures
+    dt: str / pd.Timestamp
+    Return: list of `Asset`
+    """
+    data_portal = DEFAULT_DATA_PORTAL
+    dt = pd.Timestamp(dt, tz='utc')
+    return data_portal.get_current_future_chain(root_symbol, dt)
+
+
+def get_rolls(root_symbol, start, end, roll_style='volume', offset=0):
+    """
+    root_symbol: str
+    start, end: str / pd.Timestamp
+    Return: list of tuple (sid, datetime before which sid is active)
+    """
+    data_portal = DEFAULT_DATA_PORTAL
+    start = pd.Timestamp(start, tz='utc')
+    end = pd.Timestamp(end, tz='utc')
+    return data_portal._roll_finders[roll_style].get_rolls(
+        root_symbol,
+        start,
+        end,
+        offset,
+    )

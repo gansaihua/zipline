@@ -205,7 +205,7 @@ class ContinuousFutureAdjustmentReader(object):
                          adj_value)
 
     def _get_adjustments_in_range(self, cf, dts, field):
-        if field == 'volume' or field == 'sid':
+        if field in ('volume', 'open_interest') or field == 'sid':
             return {}
         if cf.adjustment is None:
             return {}
@@ -306,7 +306,8 @@ class HistoryLoader(with_metaclass(ABCMeta)):
     adjustment_reader : SQLiteAdjustmentReader
         Reader for adjustment data.
     """
-    FIELDS = ('open', 'high', 'low', 'close', 'volume', 'sid') + ('open_interest',)
+    FIELDS = ('open', 'high', 'low', 'close',
+              'volume', 'sid') + ('open_interest',)
 
     def __init__(self, trading_calendar, reader, equity_adjustment_reader,
                  asset_finder,

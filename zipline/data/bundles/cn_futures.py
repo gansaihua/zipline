@@ -47,23 +47,25 @@ def futures_contracts():
     c.name AS asset_name,
     contract_issued AS start_date,
     delivery AS expiration_date,
-    last_traded AS auto_close_date,
+    last_traded AS end_date,
     e.symbol AS exchange
     FROM `futures_contract` AS c
     JOIN `futures_rootsymbol` as rs ON c.root_symbol_id = rs.id
     JOIN `exchange` as e ON rs.exchange_id = e.id
-    ORDER BY auto_close_date
+    ORDER BY end_date
     '''
     ret = pd.read_sql(sql, ENGINE)
 
     ret['symbol'] = ret['symbol'].apply(_sanitize_contract_symbol)
     ret['root_symbol'] = ret['symbol'].str[:2]
+    ret['auto_close_date'] = ret['end_date'] + pd.Timedelta(days=1)
     ret['multiplier'] = 1
     ret['tick_size'] = 1
     return ret
 
 
 def exchanges():
+    # CFE conflict with trading_calendars inherent exchange `CFE`
     return pd.DataFrame.from_records([
         {'exchange': 'SSE', 'country_code': 'CN'},
         {'exchange': 'SZSE', 'country_code': 'CN'},
