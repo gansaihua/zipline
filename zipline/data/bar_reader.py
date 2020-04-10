@@ -38,6 +38,7 @@ class NoDataForSid(Exception):
 
 
 OHLCV = ('open', 'high', 'low', 'close', 'volume')
+FUTURES_PRICING = OHLCV + ('open_interest',)
 
 
 class BarReader(with_metaclass(ABCMeta, object)):
