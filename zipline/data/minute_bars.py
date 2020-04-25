@@ -27,7 +27,7 @@ import logbook
 import numpy as np
 import pandas as pd
 from pandas import HDFStore
-# import tables
+import tables
 from six import with_metaclass
 from toolz import keymap, valmap
 from trading_calendars import get_calendar

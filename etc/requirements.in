@@ -33,7 +33,7 @@ empyrical>=0.5.0
 pytz>=2018.5
 # Country Codes
 iso3166>=0.9
-trading-calendars>=1.6.1
+# trading-calendars>=1.6.1
 
 # For fetching remote data
 requests>=2.9.1
@@ -47,7 +47,7 @@ alembic>=0.7.7
 bcolz>=0.12.1
 # On disk storage format for pricing data.
 h5py>=2.7.1
-# tables>=3.4.3
+tables>=3.4.3
 
 # Performance
 lru-dict>=1.1.4

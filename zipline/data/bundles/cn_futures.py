@@ -1,14 +1,16 @@
 import re
 import pandas as pd
-from tqdm import tqdm
-from logbook import Logger
+# from tqdm import tqdm
+from sqlalchemy import create_engine
 from trading_calendars import register_calendar_alias
 from zipline.assets.futures import MONTH_TO_CMES_CODE
 from zipline.data.bundles.core import register
 
-from ._engine import ENGINE
 
-log = Logger(__name__)
+ENGINE = create_engine(
+    'mysql+pymysql://rm-2zedo2m914a92z7rhfo.mysql.rds.aliyuncs.com',
+    connect_args={'read_default_file': '/share/mysql.cnf'},
+)
 
 
 def _sanitize_root_symbol(root_symbol):
@@ -54,7 +56,11 @@ def futures_contracts():
     JOIN `exchange` as e ON rs.exchange_id = e.id
     ORDER BY end_date
     '''
-    ret = pd.read_sql(sql, ENGINE)
+    ret = pd.read_sql(
+        sql,
+        ENGINE,
+        parse_dates=['start_date', 'expiration_date', 'end_date'],
+    )
 
     ret['symbol'] = ret['symbol'].apply(_sanitize_contract_symbol)
     ret['root_symbol'] = ret['symbol'].str[:2]
@@ -67,8 +73,6 @@ def futures_contracts():
 def exchanges():
     # CFE conflict with trading_calendars inherent exchange `CFE`
     return pd.DataFrame.from_records([
-        {'exchange': 'SSE', 'country_code': 'CN'},
-        {'exchange': 'SZSE', 'country_code': 'CN'},
         {'exchange': 'DCE', 'country_code': 'CN'},
         {'exchange': 'INE', 'country_code': 'CN'},
         {'exchange': 'ZCE', 'country_code': 'CN'},
@@ -93,7 +97,8 @@ def _pricing_iter(contracts, root_symbol=None):
     if root_symbol is not None:
         contracts = contracts[contracts['root_symbol'] == root_symbol]
 
-    for sid in tqdm(contracts.index):
+    # for sid in tqdm(contracts.index):
+    for sid in contracts.index:
         sql = sql_fmt.format(int(contracts.loc[sid, 'contract_id']))
         df = pd.read_sql(sql,
                          ENGINE,
@@ -150,19 +155,18 @@ def futures_bundle(environ,
     adjustment_writer.write(splits=splits, dividends=divs)
 
     contracts_meta = futures_contracts()
-    # If we want only one product
+    # If we want only one product for debug use
     rs = input('root symbol: ') or None
     # will use contract_id column
     # must run before asset_db_writer.write
     # which will normalize the columns
-    daily_bar_writer.write(_pricing_iter(contracts_meta, rs))
+    daily_bar_writer.write(_pricing_iter(contracts_meta, rs),
+                           show_progress=show_progress)
     asset_db_writer.write(futures=contracts_meta,
                           exchanges=exchanges(),
                           root_symbols=futures_root_symbols())
 
 
-register_calendar_alias("SSE", "XSHG")
-register_calendar_alias("SZSE", "XSHG")
 register_calendar_alias("DCE", "XSGE")
 register_calendar_alias("INE", "XSGE")
 register_calendar_alias("ZCE", "XSGE")

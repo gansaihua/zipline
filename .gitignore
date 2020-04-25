@@ -81,5 +81,3 @@ TAGS
 
 venv/
 *.pyd
-
-_engine.py
